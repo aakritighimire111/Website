@@ -1,0 +1,342 @@
+/* Universal reset for margin and padding */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* General body styling */
+body {
+    background-image: url("bg_1.jpg");
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-attachment: fixed;
+    height: 100vh;
+    color: white;
+    font-family: Arial, sans-serif;
+}
+
+/* Navigation bar styling */
+nav {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    margin-top: 50px;
+    padding-left: 30px;
+}
+
+nav h1 {
+    font-size: 30px;
+    color: #8B4513;
+    margin-right: 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Container for the text section */
+.container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    height: 80vh;
+    padding-left: 30px;
+    margin-top: -80px;
+}
+
+/* Text section styling */
+.text {
+    text-align: left;
+    padding-left: 30px;
+}
+
+/* Animated tagline text */
+.text p {
+    font-size: 28px;
+    font-weight: bold;
+    color: cadetblue;
+    max-width: 600px;
+    margin-bottom: 20px;
+    animation: textFadeSlide 1.8s ease-out;
+}
+
+/* Tagline Animation */
+@keyframes textFadeSlide {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Button styling group */
+.button-group {
+    display: flex;
+    justify-content: flex-start;
+    gap: 20px;
+    padding-left: 30px;
+    margin-top: -10px;
+}
+
+.button-group button {
+    width: 170px;
+    height: 44px;
+    background-color: cadetblue;
+    color: black;
+    font-size: 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: transform 0.3s ease-in-out, background-color 0.3s ease;
+}
+
+.button-group button:hover {
+    transform: scale(1.1);
+    background-color: #5F9EA0;
+}
+
+/* Additional links (Offer and Contact) styling */
+.additional-links {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 20px;
+}
+
+.additional-links a {
+    font-size: 20px;
+    text-decoration: none;
+    color: #4e4a45;
+    transition: all 0.3s ease;
+}
+
+.additional-links a:hover {
+    color: cadetblue;
+    border-bottom: 2px solid #4e4a45;
+    border-radius: 5px;
+}
+
+/* Contact info styling */
+.contact-info {
+    text-align: left;
+    margin-top: 20px;
+    padding-left: 30px;
+}
+
+.contact-info p {
+    font-size: 24px;
+    color: #808080;
+    margin-bottom: 10px;
+}
+
+.contact-info strong {
+    color: #808080;
+    font-size: 26px;
+}
+
+/* Signup and Signin Form Styles */
+.signup-container,
+.signin-container {
+    width: 400px;
+    margin: 50px auto;
+    padding: 20px;
+    background-color: white;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: left;
+}
+
+.signup-container h2,
+.signin-container h2 {
+    color: cadetblue;
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin: 10px 0 5px;
+}
+
+input {
+    width: 100%;
+    padding: 10px;
+    margin: 5px 0 20px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+button[type="submit"] {
+    width: 100%;
+    padding: 10px;
+    background-color: cadetblue;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button[type="submit"]:hover {
+    background-color: #5F9EA0;
+}
+
+input:focus {
+    border-color: cadetblue;
+    outline: none;
+}
+
+/* We Got You! Section Styling */
+.we-got-you {
+    margin-top: 40px;
+    padding: 20px;
+    width: 90%;
+    max-width: 1200px;
+    color: #2c3e50;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 40px;
+}
+
+.we-got-you h2 {
+    font-size: 36px;
+    margin-bottom: 30px;
+    color: #264653;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Problem boxes layout */
+.problem-boxes {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.problem-box {
+    background-color: #ffffff;
+    color: #333;
+    padding: 20px;
+    border-radius: 10px;
+    width: 23%;
+    text-align: center;
+    font-family: 'Courier New', Courier, monospace;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    animation: fadeIn 1.5s ease-out forwards;
+}
+
+.problem-box p {
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+/* Problem fade-in animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+/* Forgot password link */
+.forgot-password {
+    text-align: center; /* Centers the link horizontally */
+    margin-top: 10px; /* Adds space between the submit button and the link */
+}
+
+.forgot-password a {
+    font-size: 14px;
+    color: cadetblue;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.forgot-password a:hover {
+    color: #5F9EA0;
+    text-decoration: underline;
+}
+/* Workout Selection and Recommendation Page Styling */
+
+/* Container for Workout Selection */
+.workout-selection-container {
+    width: 90%;
+    max-width: 600px;
+    margin: 100px auto;
+    text-align: center;
+}
+
+.workout-selection-container h2 {
+    font-size: 28px;
+    color: cadetblue;
+    margin-bottom: 30px;
+}
+
+/* Buttons for selecting workout */
+.workout-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+}
+
+.workout-buttons button {
+    padding: 12px 24px;
+    font-size: 18px;
+    background-color: cadetblue;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.workout-buttons button:hover {
+    background-color: #5F9EA0;
+    transform: scale(1.05);
+}
+
+/* Container for Workout Recommendation */
+.workout-recommendation-container {
+    width: 90%;
+    max-width: 800px;
+    margin: 100px auto;
+    text-align: center;
+}
+
+.workout-recommendation-container h2 {
+    font-size: 32px;
+    color: cadetblue;
+    margin-bottom: 20px;
+}
+
+.recommendation-content {
+    background-color: #f4f4f4;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+    color: #333;
+    font-size: 18px;
+}
+
+.recommendation-content ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.recommendation-content li {
+    padding: 10px 0;
+    border-bottom: 1px solid #ccc;
+}
+
+/* Last list item should not have border */
+.recommendation-content li:last-child {
+    border-bottom: none;
+}
