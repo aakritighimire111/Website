@@ -5,6 +5,11 @@ import os
 import requests
 from datetime import datetime
 
+# For password reset token and email sending
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
+import smtplib
+from email.mime.text import MIMEText
+
 # Initialize Flask and SQLAlchemy
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
@@ -18,6 +23,36 @@ db_path = os.path.join(db_dir, 'users.db')
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+
+# --- Email configuration ---
+MAIL_SERVER = "smtp.gmail.com"
+MAIL_PORT = 587
+MAIL_USERNAME = os.getenv("MAIL_USERNAME")
+MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
+  # get from environment variable named MAIL_PASSWORD
+MAIL_USE_TLS = True
+MAIL_USE_SSL = False
+
+
+# Token serializer using app secret key
+serializer = URLSafeTimedSerializer(app.secret_key)
+
+def send_email(to_email, subject, body):
+    msg = MIMEText(body, "html")
+    msg["Subject"] = subject
+    msg["From"] = MAIL_USERNAME
+    msg["To"] = to_email
+
+    try:
+        server = smtplib.SMTP(MAIL_SERVER, MAIL_PORT)
+        if MAIL_USE_TLS:
+            server.starttls()
+        server.login(MAIL_USERNAME, MAIL_PASSWORD)
+        server.sendmail(MAIL_USERNAME, [to_email], msg.as_string())
+        server.quit()
+        print(f"Password reset email sent to {to_email}")
+    except Exception as e:
+        print("Failed to send email:", e)
 
 # --------------------------- MODELS ---------------------------
 class User(db.Model):
@@ -53,13 +88,16 @@ class DietLog(db.Model):
 # Initialize the database
 with app.app_context():
     db.create_all()
-    
 
 # --------------------------- ROUTES ---------------------------
 
 @app.route('/')
 def home():
     return render_template("index.html")
+@app.route('/check_mail')
+def check_mail():
+    return f"MAIL_USERNAME={MAIL_USERNAME}<br>MAIL_PASSWORD={'set' if MAIL_PASSWORD else 'not set'}"
+
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -67,6 +105,11 @@ def signup():
         name = request.form['name']
         email = request.form['email']
         password = generate_password_hash(request.form['password'])
+
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            flash("Email already registered. Please log in or use another email.", "warning")
+            return redirect(url_for('signup'))
 
         new_user = User(name=name, email=email, password=password)
         db.session.add(new_user)
@@ -77,13 +120,12 @@ def signup():
 
     return render_template('signup.html')
 
+
 # Logout route
 @app.route('/logout')
 def logout():
     session.clear()  # Or whatever logic you're using to log out
     return redirect(url_for('home'))  # Redirect to 'home' instead of 'index'
-
-
 
 @app.route('/signin', methods=['GET', 'POST'])
 def signin():
@@ -105,6 +147,18 @@ def signin():
 @app.route('/bmicalculation')
 def bmicalculation():
     return render_template('bmicalculation.html')
+@app.route('/update_progress', methods=['POST'])
+def update_progress():
+    # Example logic for updating progress
+    # You can fetch form data like this:
+    workout_done = request.form.get('workout_done')
+    duration = request.form.get('duration')
+    notes = request.form.get('notes')
+
+    # Save to DB or session (you decide)
+    flash('Progress updated successfully!')
+    return redirect(url_for('progress'))
+
 
 @app.route('/save_bmi', methods=['POST'])
 def save_bmi():
@@ -171,20 +225,17 @@ def workout():
 
     bmi = user.bmi
     preference = user.preferred_exercise_type.lower()
-    # Video recommendations based on BMI and preferences
     video_recommendations = []
 
-
-    # Example video recommendations for different BMI categories and preferences
-    if bmi < 18.5:  # Underweight
+    if bmi < 18.5:
         video_recommendations = [
            {"title": "Do This Exercise EVERY DAY for Gains!", "url": "https://www.youtube.com/watch?v=u6PNjgn1ocM"},
-            {"title": "Workout Program For Skinny Guys Trying To Get Bigger", "url": "https://www.youtube.com/watch?v=Qi0p-6XcTX0"},
-            {"title": "5 MUST DO Exercises For Skinny Guys (NO EQUIPMENT)", "url": "https://www.youtube.com/watch?v=Y9hiyIo963A"},
-            {"title": "5-minute Workout For SKINNY GUYS GAIN MUSCLE At Home", "url": "https://www.youtube.com/watch?v=IysRUAjVCpg"},
-            {"title": "INTENSE Weight Gain Workout - OMG!", "url": "https://www.youtube.com/watch?v=W7mN-i0J7M0"}
+           {"title": "Workout Program For Skinny Guys Trying To Get Bigger", "url": "https://www.youtube.com/watch?v=Qi0p-6XcTX0"},
+           {"title": "5 MUST DO Exercises For Skinny Guys (NO EQUIPMENT)", "url": "https://www.youtube.com/watch?v=Y9hiyIo963A"},
+           {"title": "5-minute Workout For SKINNY GUYS GAIN MUSCLE At Home", "url": "https://www.youtube.com/watch?v=IysRUAjVCpg"},
+           {"title": "INTENSE Weight Gain Workout - OMG!", "url": "https://www.youtube.com/watch?v=W7mN-i0J7M0"}
         ]
-    elif 18.5 <= bmi < 25:  # Normal BMI
+    elif 18.5 <= bmi < 25:
         if preference == "cardio":
             video_recommendations = [
                 {"title": "15 MIN BEGINNER CARDIO Workout (At Home No Equipment)", "url": "https://www.youtube.com/watch?v=VWj8ZxCxrYk"},
@@ -200,26 +251,11 @@ def workout():
             ]
         elif preference == "strength":
             video_recommendations = [
-        {
-            "title": "17 Min Strength Training Workout for Beginners",
-            "url": "https://www.youtube.com/watch?v=WIHy-ZnSndA"
-        },
-        {
-            "title": "30-minute NO REPEAT Strength Training for Beginners",
-            "url": "https://www.youtube.com/watch?v=IMXX7A8vQGg"
-        },
-        {
-            "title": "Weight Training for Beginners & Seniors // 20 Minute Workout",
-            "url": "https://www.youtube.com/watch?v=Qbv2edgrgvI"
-        },
-        {
-            "title": "20 Minute Full Body Strength Workout (No Equipment/No Repeat)",
-            "url": "https://www.youtube.com/watch?v=Q2cMMnUuKYQ"
-        },
-        {
-            "title": "Strength Training for Beginners | Joe Wicks Workouts",
-            "url": "https://www.youtube.com/watch?v=xO3NJ7A7w5o"
-        }
+                {"title": "17 Min Strength Training Workout for Beginners", "url": "https://www.youtube.com/watch?v=WIHy-ZnSndA"},
+                {"title": "30-minute NO REPEAT Strength Training for Beginners", "url": "https://www.youtube.com/watch?v=IMXX7A8vQGg"},
+                {"title": "Weight Training for Beginners & Seniors // 20 Minute Workout", "url": "https://www.youtube.com/watch?v=Qbv2edgrgvI"},
+                {"title": "20 Minute Full Body Strength Workout (No Equipment/No Repeat)", "url": "https://www.youtube.com/watch?v=Q2cMMnUuKYQ"},
+                {"title": "Strength Training for Beginners | Joe Wicks Workouts", "url": "https://www.youtube.com/watch?v=xO3NJ7A7w5o"}
             ]
         elif preference == "yoga":
             video_recommendations = [
@@ -227,24 +263,22 @@ def workout():
                 {"title": "20 Min Full Body Daily Yoga Practice", "url": "https://www.youtube.com/watch?v=Cj_ZmFzxm1k"},
                 {"title": "Yoga With Adriene - YouTube Channel", "url": "https://www.youtube.com/c/yogawithadriene"}
             ]
-        else:  # mixed
+        else:
             video_recommendations = [
-    {"title": "45-Min Mixed Cardio Workout (No Equipment Sweat Sesh!)", "url": "https://www.youtube.com/watch?v=Yf7dqygDtZE"},
-    {"title": "30 Minute Mixed Format Workout | 1.17.25", "url": "https://www.youtube.com/watch?v=k-S3s_U0dDw"},
-    {"title": "30 MIN CARDIO AEROBICS WORKOUT - Move To The Beat", "url": "https://www.youtube.com/watch?v=vI5MzT-wIjs"}
-]
-
-    else:  # BMI ≥ 25 (Obese)
+                {"title": "45-Min Mixed Cardio Workout (No Equipment Sweat Sesh!)", "url": "https://www.youtube.com/watch?v=Yf7dqygDtZE"},
+                {"title": "30 Minute Mixed Format Workout | 1.17.25", "url": "https://www.youtube.com/watch?v=k-S3s_U0dDw"},
+                {"title": "30 MIN CARDIO AEROBICS WORKOUT - Move To The Beat", "url": "https://www.youtube.com/watch?v=vI5MzT-wIjs"}
+            ]
+    else:
         video_recommendations = [
            {"title": "PLUS SIZE Full Body Workout / Obese Beginner Workout", "url": "https://www.youtube.com/watch?v=8IwNI8r-jo0"},
-            {"title": "Plus Size Beginner Workout / Low Impact / All Standing / 15 Mins", "url": "https://www.youtube.com/watch?v=Urv5kB3oYms"},
-            {"title": "BEGINNER WORKOUT (WHAT I DID WHILE OBESE)", "url": "https://m.youtube.com/watch?v=gNoSo4SQN2o"},
-            {"title": "PLUS SIZE/BEGINNER AT HOME WALKING WORKOUT (Low Impact)", "url": "https://www.youtube.com/watch?v=xxLLOW7-57w"},
-            {"title": "Morbidly Obese CHAIR/STANDING Workout / Mobility Issues", "url": "https://www.youtube.com/watch?v=JSKTtnVcDdU"}
+           {"title": "Plus Size Beginner Workout / Low Impact / All Standing / 15 Mins", "url": "https://www.youtube.com/watch?v=Urv5kB3oYms"},
+           {"title": "BEGINNER WORKOUT (WHAT I DID WHILE OBESE)", "url": "https://m.youtube.com/watch?v=gNoSo4SQN2o"},
+           {"title": "PLUS SIZE/BEGINNER AT HOME WALKING WORKOUT (Low Impact)", "url": "https://www.youtube.com/watch?v=xxLLOW7-57w"},
+           {"title": "Morbidly Obese CHAIR/STANDING Workout / Mobility Issues", "url": "https://www.youtube.com/watch?v=JSKTtnVcDdU"}
         ]
 
     return render_template("workouts.html", bmi=bmi, preference=preference, videos=video_recommendations)
-
 
 @app.route('/diet')
 def diet():
@@ -256,151 +290,108 @@ def diet():
     if not user or not user.bmi or not user.diet_preference:
         return redirect(url_for('bmicalculation'))
 
-    bmi = user.bmi
-    raw_pref = user.diet_preference.lower().strip()
-
-    if "protein" in raw_pref:
-        preference = "high protein"
-    elif "carb" in raw_pref:
-        preference = "low carbs"
-    elif "vegetarian" in raw_pref:
-        preference = "vegetarian"
-    else:
-        preference = "mixed"
-
-    category = "underweight" if bmi < 18.5 else "normal" if bmi < 25 else "overweight"
-
-    diet_plans = {
-        "high protein": {
-            "underweight": {
-                "Breakfast": ["Anda Tarkari with Roti", "Chana Chaat"],
-                "Lunch": ["Masoor Dal", "Paneer Bhujuri", "Rice"],
-                "Dinner": ["Grilled Chicken", "Spinach Tarkari"],
-                "Snack": ["Boiled Eggs", "Greek Yogurt"]
-            },
-            "normal": {
-                "Breakfast": ["Boiled Eggs", "Dudh Chiura"],
-                "Lunch": ["Soybean Curry", "Brown Rice"],
-                "Dinner": ["Chicken Soup", "Salad"],
-                "Snack": ["Peanut Chikki", "Protein Bar"]
-            },
-            "overweight": {
-                "Breakfast": ["Tofu Bhujuri", "Green Smoothie"],
-                "Lunch": ["Boiled Eggs", "Saag Tarkari"],
-                "Dinner": ["Grilled Fish", "Boiled Cauliflower"],
-                "Snack": ["Roasted Chana", "Cucumber Sticks"]
-            }
-        },
-        "low carbs": {
-            "underweight": {
-                "Breakfast": ["Egg Curry", "Chia Pudding"],
-                "Lunch": ["Chicken Stew", "Stir-fried Beans"],
-                "Dinner": ["Paneer Salad"],
-                "Snack": ["Nuts Mix", "Egg Whites"]
-            },
-            "normal": {
-                "Breakfast": ["Keto Roti", "Avocado Smoothie"],
-                "Lunch": ["Fish Tarkari", "Vegetable Mix"],
-                "Dinner": ["Mushroom Soup"],
-                "Snack": ["Cheese Cubes", "Peanuts"]
-            },
-            "overweight": {
-                "Breakfast": ["Omelet", "Cucumber Salad"],
-                "Lunch": ["Keto Chicken Curry", "Lettuce Wraps"],
-                "Dinner": ["Pumpkin Soup"],
-                "Snack": ["Carrot Sticks", "Almonds"]
-            }
-        },
-        "vegetarian": {
-            "underweight": {
-                "Breakfast": ["Sukha Aloo with Roti", "Milk Tea"],
-                "Lunch": ["Rajma Tarkari", "Jeera Rice"],
-                "Dinner": ["Paneer Butter Masala", "Chapati"],
-                "Snack": ["Banana", "Chikki"]
-            },
-            "normal": {
-                "Breakfast": ["Chiura with Dahi", "Banana Smoothie"],
-                "Lunch": ["Aloo Gobi", "Dal Tadka"],
-                "Dinner": ["Veg Soup", "Mixed Salad"],
-                "Snack": ["Fruit Salad", "Cornflakes"]
-            },
-            "overweight": {
-                "Breakfast": ["Oats with Fruit", "Green Tea"],
-                "Lunch": ["Taro Root", "Spinach Curry"],
-                "Dinner": ["Vegetable Stew"],
-                "Snack": ["Roasted Makhana", "Cucumber Slices"]
-            }
-        },
-        "mixed": {
-            "underweight": {
-                "Breakfast": ["Chana Chaat", "Oats with Milk"],
-                "Lunch": ["Dal Bhat", "Vegetable Curry"],
-                "Dinner": ["Grilled Chicken", "Saag Tarkari"],
-                "Snack": ["Boiled Egg", "Banana"]
-            },
-            "normal": {
-                "Breakfast": ["Milk and Chia Pudding", "Sandwich"],
-                "Lunch": ["Grilled Fish", "Vegetable Curry"],
-                "Dinner": ["Dal Bhat", "Green Salad"],
-                "Snack": ["Fruit Mix", "Egg Toast"]
-            },
-            "overweight": {
-                "Breakfast": ["Smoothie", "Boiled Eggs"],
-                "Lunch": ["Paneer Tikka", "Veg Soup"],
-                "Dinner": ["Salad", "Boiled Eggs"],
-                "Snack": ["Green Tea", "Roasted Chana"]
-            }
+    # Simple example logic for meal generation
+    if user.diet_preference == "high protein":
+        meals = {
+            'Breakfast': ['Scrambled eggs', 'Greek yogurt'],
+            'Lunch': ['Grilled chicken breast', 'Quinoa salad'],
+            'Dinner': ['Steak with broccoli', 'Cottage cheese'],
+            'Snack': ['Protein bar', 'Boiled eggs']
         }
-    }
+    elif user.diet_preference == "low carbs":
+        meals = {
+            'Breakfast': ['Avocado with eggs', 'Herbal tea'],
+            'Lunch': ['Zucchini noodles with pesto', 'Tofu stir-fry'],
+            'Dinner': ['Grilled fish', 'Spinach salad'],
+            'Snack': ['Nuts', 'Cucumber slices']
+        }
+    elif user.diet_preference == "vegetarian":
+        meals = {
+            'Breakfast': ['Oatmeal with fruits', 'Smoothie'],
+            'Lunch': ['Chickpea curry', 'Brown rice'],
+            'Dinner': ['Paneer tikka', 'Vegetable soup'],
+            'Snack': ['Fruit salad', 'Roasted peanuts']
+        }
+    else:  # mixed
+        meals = {
+            'Breakfast': ['Boiled eggs', 'Toast with peanut butter'],
+            'Lunch': ['Chicken wrap', 'Fruit'],
+            'Dinner': ['Rice and lentils', 'Grilled veggies'],
+            'Snack': ['Yogurt', 'Banana']
+        }
 
-    meals = diet_plans.get(preference, {}).get(category, {})
-    return render_template("diet.html", bmi=bmi, preference=preference, meals=meals)
+    return render_template('diet.html', meals=meals)
 
 @app.route('/progress')
 def progress():
-    # Assuming the user is logged in and you have their user_id
-    user_id = 1  # Replace with actual user ID (for logged-in users, get this from session or a user object)
-    
-    # Get user data (BMI)
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('signin'))
+
     user = User.query.get(user_id)
-    bmi = user.bmi  # Assuming BMI is stored in the User model
-    
-    # Get workout progress (e.g., total workouts completed)
-    workout_count = Workout.query.filter_by(user_id=user_id).count()
-    
-    # Get diet progress (e.g., how many meals were logged/adhered to)
-    diet_adherence = DietLog.query.filter_by(user_id=user_id).count()  # For simplicity, we're just counting meals logged
-    
-    # Get recent updates (optional)
-    recent_updates = []  # You can fetch recent updates from a log table or track progress entries here.
-    
-    # Example of recent updates
-    recent_updates = [
-        "Completed a 30-minute workout.",
-        "Followed the high-protein diet for 3 days in a row.",
-        "Lost 1 kg since last week."
-    ]
+    if not user or not user.bmi:
+        return redirect(url_for('bmicalculation'))
 
-    # Render the progress page with the data
-    return render_template('progress.html', 
-                           bmi=bmi, 
-                           workout_count=workout_count, 
-                           diet_adherence=diet_adherence,
-                           recent_updates=recent_updates)
+    return render_template('progress.html', bmi=user.bmi)
 
-@app.route('/update_progress', methods=['POST'])
-def update_progress():
-    sets = request.form.get('sets')
-    reps = request.form.get('reps')
-    intensity = request.form.get('intensity')
-    duration = request.form.get('duration')
-    calories = request.form.get('calories')
-    
-    # Code to handle saving the progress to the database or processing it
-    # Redirect or render a success page afterward
-    return redirect(url_for('progress'))  # Or render a template
 
+
+# ------------ Password Reset Routes ------------
+
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        user = User.query.filter_by(email=email).first()
+        if user:
+            token = serializer.dumps(user.email, salt='password-reset-salt')
+            reset_url = f"http://192.168.0.106:5000/reset_password/{token}"
+            html = f"""
+            <p>Hello {user.name},</p>
+            <p>To reset your password, click the link below:</p>
+            <p><a href="{reset_url}">Reset Password</a></p>
+            <p>If you did not request this, ignore this email.</p>
+            """
+            send_email(user.email, "Password Reset Request", html)
+            flash("A password reset link has been sent to your email.", "info")
+            return redirect(url_for('signin'))
+        else:
+            flash("Email address not found.", "danger")
+    return render_template('forgot_password.html')
+
+
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    try:
+        email = serializer.loads(token, salt='password-reset-salt', max_age=3600)
+    except SignatureExpired:
+        flash("The password reset link has expired.", "danger")
+        return redirect(url_for('forgot_password'))
+    except BadSignature:
+        flash("Invalid password reset token.", "danger")
+        return redirect(url_for('forgot_password'))
+
+    if request.method == 'POST':
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        if not password or not confirm_password:
+            flash("Please fill out both password fields.", "warning")
+        elif password != confirm_password:
+            flash("Passwords do not match.", "warning")
+        else:
+            user = User.query.filter_by(email=email).first()
+            if user:
+                user.password = generate_password_hash(password)
+                db.session.commit()
+                flash("Your password has been updated! You can now log in.", "success")
+                return redirect(url_for('signin'))
+            else:
+                flash("User not found.", "danger")
+                return redirect(url_for('forgot_password'))
+
+    return render_template('reset_password.html')
 
 # --------------------------- MAIN ---------------------------
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', debug=True)
+

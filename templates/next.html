@@ -16,6 +16,7 @@
       justify-content: flex-end;
       align-items: center;
       padding-right: 100px;
+      margin: 0; /* To avoid default body margin */
     }
     /* Positioning the logout button in the top-right corner */
     .logout-button {
@@ -31,7 +32,6 @@
       font-weight: bold;
       transition: background-color 0.3s ease;
     }
-
     .logout-button:hover {
       background-color: darkred;
     }
@@ -52,6 +52,7 @@
       flex-wrap: wrap;
       gap: 20px;
       justify-content: center;
+      margin-top: 20px;
     }
     .home-buttons button {
       padding: 10px 20px;
@@ -61,6 +62,7 @@
       border: none;
       border-radius: 5px;
       cursor: pointer;
+      transition: background-color 0.3s ease;
     }
     .home-buttons button:hover {
       background-color: #5F9EA0;
@@ -68,17 +70,18 @@
   </style>
 </head>
 <body>
-   <!-- Logout button -->
-   <a href="{{ url_for('logout') }}" class="logout-button">Logout</a>
+  <!-- Logout button -->
+  <a href="{{ url_for('logout') }}" class="logout-button">Logout</a>
+
   <div class="welcome">
     <h1>Welcome Back!</h1>
     <p>Your journey towards a healthier lifestyle starts here.</p>
-    <div class="home-buttons">
-      <button onclick="location.href='{{ url_for('tracker') }}'">Calorie Tracker</button>
-      <button onclick="location.href='{{ url_for('workout') }}'">Workout Plans</button>
-      <button onclick="location.href='{{ url_for('diet') }}'">Diet Plan</button>
-      <button onclick="location.href='{{ url_for('progress') }}'">Progress Report</button>
-    </div>
+  <button onclick='location.href="{{ url_for("tracker") }}"'>Calorie Tracker</button>
+<button onclick='location.href="{{ url_for("workout") }}"'>Workout Plans</button>
+<button onclick='location.href="{{ url_for("diet") }}"'>Diet Plan</button>
+<button onclick='location.href="{{ url_for("progress") }}"'>Progress Report</button>
+
+
   </div>
 </body>
 </html>
