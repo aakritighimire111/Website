@@ -11,6 +11,7 @@ from datetime import datetime
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 import smtplib
 from email.mime.text import MIMEText
+from datetime import datetime, timedelta
 
 # Initialize Flask and SQLAlchemy
 app = Flask(__name__)
@@ -499,22 +500,91 @@ def update_progress():
             weight_feedback = "No weight entries found. Start logging your weight."
 
     # Placeholder diet adherence (can replace with real data)
-    diet_adherence = 75
+        user_id = session.get('user_id')
+    if not user_id:
+        flash("Please log in to view diet progress.", "warning")
+        return redirect(url_for('signin'))
+
+    user = User.query.get(user_id)
+    if not user:
+        flash("User not found.", "danger")
+        return redirect(url_for('signin'))
+
+    # Define the number of days for the calculation
+    days = 7
+    start_date = datetime.utcnow() - timedelta(days=days)
+
+    # Fetch all diet logs for the user within the last N days
+    recent_logs = DietLog.query.filter(
+        DietLog.user_id == user_id,
+        DietLog.date >= start_date
+    ).all()
+
+    if not recent_logs:
+        diet_adherence = 0
+        feedback = "No diet logs found in the past week to calculate your progress."
+    else:
+        # Calculate average calories from the logs
+        total_calories = sum(log.calories for log in recent_logs)
+        avg_calories = total_calories / len(recent_logs)
+
+        # Get target calories - either stored per user or default 2000
+        target_calories = getattr(user, 'target_calories', 2000)
+
+        # Calculate percentage adherence
+        diet_adherence = round((avg_calories / target_calories) * 100, 2)
+
+        # Generate feedback based on adherence
+        if diet_adherence > 110:
+            feedback = "Your calorie intake is above your target. Consider reducing portion sizes."
+        elif diet_adherence < 90:
+            feedback = "Your calorie intake is below your target. Make sure you're eating enough."
+        else:
+            feedback = "Great job! You're sticking close to your calorie goals."
 
     # Render template with all progress info
     return render_template(
-        'progress.html',
-        bmi=user.bmi or 0,
-        workout_count=workout_count,
-        diet_adherence=diet_adherence,
-        recent_updates=recent_updates,
-        feedback=feedback,
-        weight_feedback=weight_feedback,
-        weight_trend=weight_trend
-    )
+    'progress.html',
+    bmi=user.bmi or 0,
+    workout_count=workout_count,
+    diet_adherence=diet_adherence,
+    recent_updates=recent_updates,
+    feedback=feedback,
+    weight_feedback=weight_feedback,
+    weight_trend=weight_trend,
+    avg_calories=avg_calories if recent_logs else None,
+    target_calories=target_calories
+)
 
 
 # ------------ Password Reset Routes ------------
+@app.route('/log_diet', methods=['POST'])
+def log_diet():
+    user_id = session.get('user_id')
+    if not user_id:
+        flash("Please log in first.", "warning")
+        return redirect(url_for('signin'))
+
+    meal = request.form.get('meal')
+    calories = request.form.get('calories')
+
+    if not meal or not calories:
+        flash("Please enter both meal description and calories.", "danger")
+        return redirect(url_for('diet'))
+
+    try:
+        calories = int(calories)
+    except ValueError:
+        flash("Calories must be a number.", "danger")
+        return redirect(url_for('diet'))
+
+    diet_log = DietLog(user_id=user_id, meal=meal, calories=calories)
+    db.session.add(diet_log)
+    db.session.commit()
+
+    flash("Meal calories logged successfully!", "success")
+    return redirect(url_for('diet'))
+
 
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
