@@ -369,6 +369,7 @@ def diet():
         preference=user.diet_preference
     )
 
+
 @app.route('/progress', endpoint='progress')
 def update_progress():
     user_id = session.get('user_id')
@@ -381,180 +382,150 @@ def update_progress():
         flash("User not found.", "danger")
         return redirect(url_for('signin'))
 
-    # Workouts
+    ### Workout Progress ###
     workouts = Workout.query.filter_by(user_id=user_id).order_by(Workout.date.desc()).all()
     workout_count = len(workouts)
 
     if workout_count == 0:
-        feedback = "Let's get started! Track your first workout today."
+        workout_feedback = "Let's get started! Track your first workout today."
         recent_updates = []
     else:
-        workouts_sorted = sorted(workouts, key=lambda w: w.date, reverse=True)
-        latest = workouts_sorted[0]
-        past = workouts_sorted[1:6] if len(workouts_sorted) > 1 else []
+        latest = workouts[0]
+        past = workouts[1:6] if len(workouts) > 1 else []
 
         if past:
-            avg_sets_past = sum(w.sets for w in past) / len(past)
-            avg_reps_past = sum(w.reps for w in past) / len(past)
-            avg_duration_past = sum(w.duration for w in past) / len(past)
+            avg_sets = sum(w.sets for w in past) / len(past)
+            avg_reps = sum(w.reps for w in past) / len(past)
+            avg_duration = sum(w.duration for w in past) / len(past)
 
-            sets_change = latest.sets - avg_sets_past
-            reps_change = latest.reps - avg_reps_past
-            duration_change = latest.duration - avg_duration_past
+            sets_diff = latest.sets - avg_sets
+            reps_diff = latest.reps - avg_reps
+            duration_diff = latest.duration - avg_duration
 
-            feedback = "📊 <strong>Your Progress Report:</strong><br>"
+            workout_feedback = "📊 <strong>Your Workout Progress:</strong><br>"
+            if sets_diff > 0:
+                workout_feedback += f"➕ Sets increased by <b>{sets_diff:.1f}</b>.<br>"
+            elif sets_diff < 0:
+                workout_feedback += f"⚠️ Sets dropped by <b>{abs(sets_diff):.1f}</b>.<br>"
 
-            if sets_change > 0:
-                feedback += f"➕ Sets increased by <b>{sets_change:.1f}</b> compared to average.<br>"
-            elif sets_change < 0:
-                feedback += f"⚠️ Sets dropped by <b>{abs(sets_change):.1f}</b>. Try to stay consistent.<br>"
+            if reps_diff > 0:
+                workout_feedback += f"💪 Reps improved by <b>{reps_diff:.1f}</b>.<br>"
+            elif reps_diff < 0:
+                workout_feedback += f"📉 Reps dropped by <b>{abs(reps_diff):.1f}</b>.<br>"
 
-            if reps_change > 0:
-                feedback += f"💪 Reps improved by <b>{reps_change:.1f}</b> — great job!<br>"
-            elif reps_change < 0:
-                feedback += f"📉 Reps decreased by <b>{abs(reps_change):.1f}</b>. Keep pushing!<br>"
+            if duration_diff > 0:
+                workout_feedback += f"⏱️ Workout duration increased by <b>{duration_diff:.1f}</b> mins.<br>"
+            elif duration_diff < 0:
+                workout_feedback += f"⏳ Workout time reduced by <b>{abs(duration_diff):.1f}</b> mins.<br>"
 
-            if duration_change > 0:
-                feedback += f"⏱️ Duration increased by <b>{duration_change:.1f}</b> minutes — awesome!<br>"
-            elif duration_change < 0:
-                feedback += f"⏳ Workout time down by <b>{abs(duration_change):.1f}</b> mins.<br>"
-
-            if latest.intensity in ['High', 'Very High']:
-                feedback += f"🔥 You're doing high-intensity workouts. Keep it up!<br>"
-            elif latest.intensity == 'Moderate':
-                feedback += f"👌 Moderate intensity. Try pushing to high next time.<br>"
+            if latest.intensity == "High":
+                workout_feedback += "🔥 High intensity workout! Keep pushing!<br>"
+            elif latest.intensity == "Moderate":
+                workout_feedback += "👌 Moderate intensity. Try leveling up!<br>"
             else:
-                feedback += f"💤 Intensity was low. Consider increasing for better gains.<br>"
-
+                workout_feedback += "💤 Low intensity. Try more intense sessions.<br>"
         else:
-            feedback = "👏 Great start! Track more workouts to see trends."
+            workout_feedback = "👏 Great start! Track more workouts to see trends."
 
         recent_updates = [
             f"📅 {w.date.strftime('%Y-%m-%d')}: {w.sets} sets, {w.reps} reps, {w.intensity} intensity, {w.duration} mins"
-            for w in workouts_sorted[:5]
+            for w in workouts[:5]
         ]
 
-    # Weight feedback logic (improved)
+    ### Weight Progress ###
     weight_logs = WeightLog.query.filter_by(user_id=user_id).order_by(WeightLog.date.desc()).all()
     weight_feedback = ""
     weight_trend = []
 
-    if weight_logs and len(weight_logs) > 1:
-        latest_wt = float(weight_logs[0].weight)
-        previous_wt = float(weight_logs[1].weight)
-        change = latest_wt - previous_wt
-
-        # DEBUG: Remove/comment after testing
-        print(f"Latest weight: {latest_wt}, Previous weight: {previous_wt}, Change: {change}")
-        print(f"User BMI: {user.bmi}")
+    if len(weight_logs) > 1:
+        latest_weight = weight_logs[0].weight
+        previous_weight = weight_logs[1].weight
+        change = latest_weight - previous_weight
 
         weight_trend = [
             f"{log.date.strftime('%Y-%m-%d')} — {log.weight:.1f} kg" for log in weight_logs[:5]
         ]
 
-        if user.bmi is not None:
-            # Underweight
-            if user.bmi < 18.5:
-                if change > 1.0:
-                    weight_feedback = "👏 Great! You're gaining significant weight — keep it up with a nutritious diet!"
+        if user.bmi:
+            if user.bmi < 18.5:  # Underweight
+                if change > 1:
+                    weight_feedback = "👏 Gained significant weight. Keep eating healthy!"
                 elif change > 0.2:
-                    weight_feedback = "👍 Good progress! Small weight gain, stay consistent."
+                    weight_feedback = "👍 Small gain. Stay consistent."
                 elif change > 0:
-                    weight_feedback = "🙂 Slight weight gain detected, try adding more protein and calories."
+                    weight_feedback = "🙂 Slight gain. Add more protein/calories."
                 elif change == 0:
-                    weight_feedback = "⚠️ No weight gain or loss. Consider revising your nutrition plan."
-                else:  # change < 0
-                    weight_feedback = "⚠️ Weight loss detected. Try to increase calorie intake and consult a nutritionist."
-
-            # Overweight
-            elif user.bmi > 25:
-                if change < -1.0:
-                    weight_feedback = "🎉 Excellent progress! Significant weight loss observed."
+                    weight_feedback = "⚠️ No change. Adjust your nutrition."
+                else:
+                    weight_feedback = "⚠️ Weight drop. Eat more and revised you diet plan."
+            elif user.bmi > 25:  # Overweight
+                if change < -1:
+                    weight_feedback = "🎉 Excellent weight loss progress!"
                 elif change < -0.2:
-                    weight_feedback = "✅ Good job! Moderate weight loss, keep going."
+                    weight_feedback = "✅ Good weight drop. Keep going."
                 elif change < 0:
-                    weight_feedback = "🙂 Slight weight loss detected, stay consistent."
+                    weight_feedback = "🙂 Slight drop. Keep it steady."
                 elif change == 0:
-                    weight_feedback = "⚠️ No weight gain or loss. Keep monitoring your diet and activity."
-                else:  # change > 0
-                    weight_feedback = "⚠️ Weight gain detected. Consider reducing calories or increasing activity."
-
-            # Normal BMI range
-            else:
+                    weight_feedback = "⚠️ No change. Stay consistent."
+                else:
+                    weight_feedback = "⚠️ Gaining weight. Revisit your diet plan."
+            else:  # Normal
                 if abs(change) < 0.2:
-                    weight_feedback = "💪 Weight is stable — good job maintaining your weight!"
-                elif 0.2 <= change < 1.0:
-                    weight_feedback = "⚠️ Slight weight gain, watch portion sizes and activity."
-                elif change >= 1.0:
-                    weight_feedback = "⚠️ Noticeable weight gain. Monitor your diet carefully."
-                elif -1.0 < change <= -0.2:
-                    weight_feedback = "⚠️ Slight weight loss, ensure you’re eating enough."
-                elif change <= -1.0:
-                    weight_feedback = "⚠️ Significant weight loss detected. Monitor your health closely."
+                    weight_feedback = "💪 Weight is stable — well maintained!"
+                elif 0.2 <= change < 1:
+                    weight_feedback = "⚠️ Slight gain. Monitor intake."
+                elif change >= 1:
+                    weight_feedback = "⚠️ Gained weight. Adjust portions."
+                elif -1 < change <= -0.2:
+                    weight_feedback = "⚠️ Slight loss. Ensure enough calories."
+                else:
+                    weight_feedback = "⚠️ Lost weight. Monitor your health."
         else:
-            weight_feedback = "BMI data unavailable to generate weight feedback."
+            weight_feedback = "BMI not found. Feedback based on BMI unavailable."
+    elif weight_logs:
+        weight_feedback = "📍 Only one weight entry found. Add more to track progress."
     else:
-        if weight_logs:
-            weight_feedback = "📍 Only one weight entry found. Add more to track your progress."
-        else:
-            weight_feedback = "No weight entries found. Start logging your weight."
+        weight_feedback = "🚫 No weight logs found. Start tracking now!"
 
-    # Placeholder diet adherence (can replace with real data)
-        user_id = session.get('user_id')
-    if not user_id:
-        flash("Please log in to view diet progress.", "warning")
-        return redirect(url_for('signin'))
-
-    user = User.query.get(user_id)
-    if not user:
-        flash("User not found.", "danger")
-        return redirect(url_for('signin'))
-
-    # Define the number of days for the calculation
-    days = 7
-    start_date = datetime.utcnow() - timedelta(days=days)
-
-    # Fetch all diet logs for the user within the last N days
-    recent_logs = DietLog.query.filter(
+    ### Diet Progress ###
+    start_date = datetime.utcnow() - timedelta(days=7)
+    diet_logs = DietLog.query.filter(
         DietLog.user_id == user_id,
         DietLog.date >= start_date
     ).all()
 
-    if not recent_logs:
+    # Ensure target_calories is defined before if-block to avoid UnboundLocalError
+    target_calories = getattr(user, 'target_calories', 2000)
+
+    if not diet_logs:
         diet_adherence = 0
-        feedback = "No diet logs found in the past week to calculate your progress."
+        diet_feedback = "No diet logs found this week. Add meals to track progress."
+        avg_calories = None
     else:
-        # Calculate average calories from the logs
-        total_calories = sum(log.calories for log in recent_logs)
-        avg_calories = total_calories / len(recent_logs)
-
-        # Get target calories - either stored per user or default 2000
-        target_calories = getattr(user, 'target_calories', 2000)
-
-        # Calculate percentage adherence
+        avg_calories = sum(log.calories for log in diet_logs) / len(diet_logs)
         diet_adherence = round((avg_calories / target_calories) * 100, 2)
 
-        # Generate feedback based on adherence
         if diet_adherence > 110:
-            feedback = "Your calorie intake is above your target. Consider reducing portion sizes."
+            diet_feedback = "Your intake is above target. Consider reducing portions."
         elif diet_adherence < 90:
-            feedback = "Your calorie intake is below your target. Make sure you're eating enough."
+            diet_feedback = "Your intake is below target. Eat enough for energy."
         else:
-            feedback = "Great job! You're sticking close to your calorie goals."
+            diet_feedback = "✅ Perfect! You're on track with your diet goals."
 
-    # Render template with all progress info
+    ### Final Render ###
     return render_template(
-    'progress.html',
-    bmi=user.bmi or 0,
-    workout_count=workout_count,
-    diet_adherence=diet_adherence,
-    recent_updates=recent_updates,
-    feedback=feedback,
-    weight_feedback=weight_feedback,
-    weight_trend=weight_trend,
-    avg_calories=avg_calories if recent_logs else None,
-    target_calories=target_calories
-)
+        'progress.html',
+        bmi=user.bmi or 0,
+        workout_count=workout_count,
+        recent_updates=recent_updates,
+        feedback=workout_feedback,
+        weight_feedback=weight_feedback,
+        weight_trend=weight_trend,
+        diet_adherence=diet_adherence,
+        diet_feedback=diet_feedback,
+        avg_calories=avg_calories if diet_logs else None,
+        target_calories=target_calories
+    )
 
 
 # ------------ Password Reset Routes ------------
@@ -659,5 +630,8 @@ def submit_weight():
 
 # --------------------------- MAIN ---------------------------
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()  # This creates all tables if they don't exist
+
     app.run(host='0.0.0.0', debug=True)
 
