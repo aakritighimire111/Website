@@ -116,6 +116,19 @@ with app.app_context():
     db.create_all()
 
 # --------------------------- ROUTES ---------------------------
+@app.route('/all_data')
+def all_data():
+    users = User.query.all()
+    workouts = Workout.query.all()
+    diet_logs = DietLog.query.all()
+    weight_logs = WeightLog.query.all()
+
+    return render_template('all_data.html',
+                           users=users,
+                           workouts=workouts,
+                           diet_logs=diet_logs,
+                           weight_logs=weight_logs)
+
 
 @app.route('/')
 def home():
@@ -123,6 +136,7 @@ def home():
 @app.route('/check_mail')
 def check_mail():
     return f"MAIL_USERNAME={MAIL_USERNAME}<br>MAIL_PASSWORD={'set' if MAIL_PASSWORD else 'not set'}"
+
 
 
 @app.route('/signup', methods=['GET', 'POST'])
@@ -225,11 +239,6 @@ def save_bmi():
 def next_page():
     return render_template('next.html')
 
-@app.route('/users')
-def user_table():
-    users = User.query.all()
-    return render_template('users.html', users=users)
-
 @app.route('/offer')
 def offer():
     return render_template('offer.html')
@@ -256,6 +265,7 @@ def get_nutrition():
 
 @app.route('/workouts')
 def workout():
+    
     user_id = session.get('user_id')
     if not user_id:
         return redirect(url_for('signin'))

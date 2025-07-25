@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>All Data</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    h1 {
+      color: #333;
+      margin-top: 40px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 10px;
+      margin-bottom: 40px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px 12px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    tr:nth-child(even) {
+      background-color: #fafafa;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Users</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th><th>Name</th><th>Email</th><th>Password</th><th>BMI</th><th>Preferred Exercise</th><th>Diet Preference</th><th>BMI Category</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in users %}
+      <tr>
+        <td>{{ user.id }}</td>
+        <td>{{ user.name }}</td>
+        <td>{{ user.email }}</td>
+        <td>{{ user.password }}</td> <!-- Be careful showing passwords in real apps -->
+        <td>{{ user.bmi if user.bmi is not none else 'N/A' }}</td>
+        <td>{{ user.preferred_exercise_type or 'N/A' }}</td>
+        <td>{{ user.diet_preference or 'N/A' }}</td>
+        <td>
+          {% if user.bmi is none %}
+            N/A
+          {% elif user.bmi < 18.5 %}
+            Underweight
+          {% elif 18.5 <= user.bmi < 24.9 %}
+            Normal weight
+          {% elif 25 <= user.bmi < 29.9 %}
+            Overweight
+          {% else %}
+            Obese
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8">No users found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h1>Workouts</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th><th>User ID</th><th>Workout Date</th><th>Type</th><th>Duration (mins)</th><th>Intensity</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for w in workouts %}
+      <tr>
+        <td>{{ w.id }}</td>
+        <td>{{ w.user_id }}</td>
+        <td>{{ w.date.strftime('%Y-%m-%d') if w.date else 'N/A' }}</td>
+        <td>{{ w.workout_type or 'N/A' }}</td>
+        <td>{{ w.duration or 'N/A' }}</td>
+        <td>{{ w.intensity or 'N/A' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">No workouts found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h1>Diet Logs</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th><th>User ID</th><th>Date</th><th>Meal Type</th><th>Calories</th><th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in diet_logs %}
+      <tr>
+        <td>{{ d.id }}</td>
+        <td>{{ d.user_id }}</td>
+        <td>{{ d.date.strftime('%Y-%m-%d') if d.date else 'N/A' }}</td>
+        <td>{{ d.meal_type or 'N/A' }}</td>
+        <td>{{ d.calories or 'N/A' }}</td>
+        <td>{{ d.notes or 'N/A' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">No diet logs found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h1>Weight Logs</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th><th>User ID</th><th>Date</th><th>Weight (kg)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in weight_logs %}
+      <tr>
+        <td>{{ log.id }}</td>
+        <td>{{ log.user_id }}</td>
+        <td>{{ log.date.strftime('%Y-%m-%d') if log.date else 'N/A' }}</td>
+        <td>{{ log.weight }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4">No weight logs found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+</body>
+</html>
