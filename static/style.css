@@ -7,23 +7,25 @@
 
 /* General body styling */
 body {
-    background-image: url("bg_1.jpg");
+    min-height: 100vh;
+    background-image: url("bg_1.jpg"); /* Relative to the static folder */
     background-size: cover;
     background-repeat: no-repeat;
-    background-position: center center;
+    background-position: center;
     background-attachment: fixed;
-    height: 100vh;
-    color: white;
-    font-family: Arial, sans-serif;
+    font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+     color: white;
 }
+
+
 
 /* Navigation bar styling */
 nav {
     display: flex;
-    justify-content: flex-start;
+    justify-content: space-between;
     align-items: center;
     margin-top: 50px;
-    padding-left: 30px;
+    padding: 0 30px;
 }
 
 nav h1 {
@@ -340,3 +342,69 @@ input:focus {
 .recommendation-content li:last-child {
     border-bottom: none;
 }
+.flash-message {
+    background-color: #ffdddd;
+    color: red;
+    border: 1px solid red;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    text-align: center;
+}
+button {
+    background-color: #4CAF50; /* Green background */
+    color: white;              /* White text */
+    padding: 10px 20px;        /* Some padding */
+    border: none;              /* No borders */
+    border-radius: 5px;        /* Rounded corners */
+    cursor: pointer;           /* Pointer cursor on hover */
+    font-size: 16px;
+    margin-top: 10px;
+    transition: background-color 0.3s ease;
+  }
+  
+  button:hover {
+    background-color: #45a049; /* Darker green on hover */
+  }
+  .workout-videos {
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 20px;
+    margin: 20px auto;
+    border-radius: 10px;
+    max-width: 800px;
+    color: #000;
+  }
+  
+  .workout-videos ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .workout-videos li {
+    margin: 10px 0;
+  }
+  
+  .workout-videos a {
+    color: #007bff;
+    text-decoration: none;
+  }
+  
+  .workout-videos a:hover {
+    text-decoration: underline;
+  }
+  .logout-button {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    background-color: crimson;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+  }
+  .logout-button:hover {
+    background-color: darkred;
+  }
+  

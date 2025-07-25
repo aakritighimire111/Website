@@ -4,17 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Offer - Calorie-Tracking With Workout Recommendation System</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <nav>
-        <h1>Calorie-Tracking With Workout Recommendation System</h1>
-        <ul>
+        <div class="nav-left">
+            <h1>Calorie-Tracking With Workout Recommendation System</h1>
+        </div>
+        <ul class="nav-links">
+            <li><a href="{{ url_for('home') }}">Home</a></li>
+            <li><a href="{{ url_for('signup') }}">Sign Up</a></li>
+            <li><a href="{{ url_for('signin') }}">Sign In</a></li>
+            <li><a href="{{ url_for('offer') }}">Offer</a></li>
+            <li><a href="{{ url_for('contact') }}">Contact</a></li>
         </ul>
     </nav>
 
     <div class="container">
         <div class="text">
+            <h2>Special Offer</h2>
             <p class="offer-text">
                 Our system offers personalized workout plans, diet recommendations, BMI tracking, calorie monitoring, and progress visualization — all tailored to your goals!
             </p>

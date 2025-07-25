@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Calorie Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-image: url("{{ url_for('static', filename='image_2.jpg') }}");
+      background-size: cover;
+      background-position: center;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      margin: 100px auto;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.3);
+    }
+    h1, h3 {
+      text-align: center;
+      color: #222;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    button {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #218838;
+    }
+    .add-form {
+      display: none;
+      margin-top: 20px;
+    }
+    #results {
+      margin-top: 20px;
+      background-color: #f8f9fa;
+      padding: 15px;
+      border-radius: 5px;
+    }
+    .cancel-btn {
+      background-color: #dc3545;
+    }
+    .cancel-btn:hover {
+      background-color: #c82333;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Calorie Tracker</h1>
+    <input type="text" id="foodInput" placeholder="Enter food name (Nepali or others)" />
+    <button onclick="getNutrition()">Get Nutrition Info</button>
+    <div id="results"></div>
+
+    <div class="add-form" id="addForm">
+      <h3>Add Food Info</h3>
+      <input type="text" id="newFoodName" placeholder="Food name" />
+      <input type="number" id="newCalories" placeholder="Calories" />
+      <input type="number" id="newProtein" placeholder="Protein (g)" />
+      <input type="number" id="newCarbs" placeholder="Carbs (g)" />
+      <input type="number" id="newFat" placeholder="Fat (g)" />
+      <button onclick="addCustomFood()">Add Food</button>
+      <button class="cancel-btn" onclick="cancelAdd()">Cancel</button>
+    </div>
+  </div>
+
+  <script>
+    const nepaliFood = {
+      "dal bhat": { calories: 400, protein: 12, carbs: 85, fat: 2 },
+      "yomari": { calories: 250, protein: 3, carbs: 50, fat: 6 },
+      "momo": { calories: 300, protein: 15, carbs: 45, fat: 10 },
+      "masala roti": { calories: 280, protein: 6, carbs: 52, fat: 8 },
+      "mughlai paratha": { calories: 350, protein: 10, carbs: 50, fat: 12 },
+      "saag": { calories: 150, protein: 8, carbs: 20, fat: 7 },
+      "chole bhature": { calories: 400, protein: 12, carbs: 70, fat: 12 },
+      "aloo paratha": { calories: 290, protein: 6, carbs: 50, fat: 8 },
+      "tarkari": { calories: 100, protein: 4, carbs: 18, fat: 4 },
+      "chatpate": { calories: 180, protein: 4, carbs: 30, fat: 7 },
+      "sukuti": { calories: 250, protein: 18, carbs: 5, fat: 18 },
+      "dahi chiura": { calories: 350, protein: 8, carbs: 60, fat: 8 },
+      "aloo tikki": { calories: 200, protein: 4, carbs: 30, fat: 8 },
+      "french fries": { calories: 220, protein: 3, carbs: 30, fat: 10 },
+      "pakora": { calories: 150, protein: 5, carbs: 30, fat: 5 },
+      "khichdi": { calories: 220, protein: 8, carbs: 40, fat: 5 },
+      "puri sabji": { calories: 400, protein: 8, carbs: 60, fat: 15 },
+      "chura achar": { calories: 250, protein: 5, carbs: 50, fat: 8 },
+      "kheer": { calories: 250, protein: 5, carbs: 40, fat: 10 },
+      "rasgulla": { calories: 150, protein: 5, carbs: 35, fat: 1 },
+      "gulab jamun": { calories: 150, protein: 2, carbs: 25, fat: 7 },
+      "sel roti": { calories: 180, protein: 2, carbs: 30, fat: 6 },
+      "baji": { calories: 250, protein: 8, carbs: 45, fat: 7 },
+      "makai ko roti": { calories: 220, protein: 5, carbs: 50, fat: 7 },
+      "kodo ko roti": { calories: 200, protein: 5, carbs: 45, fat: 4 },
+      "dalle ko achar": { calories: 100, protein: 2, carbs: 15, fat: 4 },
+      "chicken curry": { calories: 300, protein: 25, carbs: 10, fat: 18 },
+      "beef curry": { calories: 350, protein: 30, carbs: 10, fat: 20 },
+      "mutton curry": { calories: 400, protein: 35, carbs: 15, fat: 25 },
+      "yak cheese": { calories: 100, protein: 5, carbs: 0, fat: 9 }
+    };
+
+    function capitalize(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    async function getNutrition() {
+      const query = document.getElementById("foodInput").value.trim().toLowerCase();
+      const results = document.getElementById("results");
+      const form = document.getElementById("addForm");
+
+      if (!query) {
+        results.innerHTML = "<p>Please enter a food name.</p>";
+        return;
+      }
+
+      if (nepaliFood[query]) {
+        const f = nepaliFood[query];
+        results.innerHTML = `
+          <h3>${capitalize(query)}</h3>
+          <p>Calories: ${f.calories} kcal</p>
+          <p>Protein: ${f.protein} g</p>
+          <p>Carbs: ${f.carbs} g</p>
+          <p>Fat: ${f.fat} g</p>
+        `;
+        form.style.display = "none";
+      } else {
+        try {
+          const response = await fetch("https://trackapi.nutritionix.com/v2/natural/nutrients", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-app-id": "1d0d5fe0",
+              "x-app-key": "4f7517dcdcaebf1f060746deb28bf5e2",
+              "x-remote-user-id": "0"
+            },
+            body: JSON.stringify({ query })
+          });
+
+          const data = await response.json();
+          if (data.foods && data.foods.length > 0) {
+            const f = data.foods[0];
+            results.innerHTML = `
+              <h3>${capitalize(f.food_name)}</h3>
+              <p>Calories: ${f.nf_calories} kcal</p>
+              <p>Protein: ${f.nf_protein} g</p>
+              <p>Carbs: ${f.nf_total_carbohydrate} g</p>
+              <p>Fat: ${f.nf_total_fat} g</p>
+            `;
+            form.style.display = "none";
+          } else {
+            showAddForm(query);
+          }
+        } catch (error) {
+          showAddForm(query);
+        }
+      }
+    }
+
+    function showAddForm(foodName) {
+      document.getElementById("results").innerHTML = `<p>No info found for "${foodName}". You can add it below:</p>`;
+      document.getElementById("addForm").style.display = "block";
+      document.getElementById("newFoodName").value = foodName;
+    }
+
+    function cancelAdd() {
+      document.getElementById("addForm").style.display = "none";
+      document.getElementById("results").innerHTML = "";
+    }
+
+    function addCustomFood() {
+      const name = document.getElementById("newFoodName").value.trim().toLowerCase();
+      const calories = parseFloat(document.getElementById("newCalories").value);
+      const protein = parseFloat(document.getElementById("newProtein").value);
+      const carbs = parseFloat(document.getElementById("newCarbs").value);
+      const fat = parseFloat(document.getElementById("newFat").value);
+
+      if (name && !isNaN(calories) && !isNaN(protein) && !isNaN(carbs) && !isNaN(fat)) {
+        nepaliFood[name] = { calories, protein, carbs, fat };
+        document.getElementById("results").innerHTML = `
+          <h3>${capitalize(name)}</h3>
+          <p>Calories: ${calories} kcal</p>
+          <p>Protein: ${protein} g</p>
+          <p>Carbs: ${carbs} g</p>
+          <p>Fat: ${fat} g</p>
+        `;
+        cancelAdd();
+      } else {
+        alert("Please fill in all fields with valid numbers.");
+      }
+    }
+  </script>
+
+</body>
+</html>

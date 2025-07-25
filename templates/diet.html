@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Vibrant Diet Plan</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #e0f7fa; /* Light blue color */
+            color: #333;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            max-width: 1000px;
+            width: 100%;
+            text-align: center;
+            animation: fadeIn 2s ease-out;
+            overflow-y: auto;
+            max-height: 90vh;
+        }
+
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        h1 {
+            font-size: 3rem;
+            color: #ff4081; /* Vibrant pink */
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                color: #ffd700;
+            }
+            50% {
+                transform: scale(1.1);
+                color: #ff5722;
+            }
+            100% {
+                transform: scale(1);
+                color: #ffd700;
+            }
+        }
+
+        h2, h3 {
+            font-size: 1.8rem;
+            color: #ff4081;
+            margin-bottom: 10px;
+        }
+
+        .diet-section {
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            animation: fadeInSection 2s ease-out;
+        }
+
+        @keyframes fadeInSection {
+            0% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .diet-section h4 {
+            font-size: 1.6rem;
+            color: #ffcc00;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .diet-section ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .diet-section ul li {
+            font-size: 1.2rem;
+            margin: 8px 0;
+            color: #333;
+            padding: 12px;
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.1);
+            transition: background 0.3s ease;
+        }
+
+        .diet-section ul li:hover {
+            background: #ff4081;
+            color: #fff;
+        }
+
+        .diet-section ul li::before {
+            content: "🍴 ";
+            color: #ff9800;
+        }
+
+        .footer {
+            margin-top: 50px;
+            font-size: 1.1rem;
+            color: #333;
+        }
+
+        .footer a {
+            color: #ff9800;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        .message-box {
+            background: #ff4081;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            animation: messagePop 1s ease-out;
+        }
+
+        @keyframes messagePop {
+            0% {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .message-box h3 {
+            font-size: 2rem;
+            color: #fff;
+            margin: 0;
+            font-weight: bold;
+        }
+
+        .message-box p {
+            font-size: 1.4rem;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Flash Message Box -->
+        <div class="message-box">
+            <h3>Your Vibrant Diet Plan is Ready!</h3>
+            <p><strong>Your BMI:</strong> {{ bmi }}</p>
+            <p><strong>Diet Preference:</strong> {{ preference }}</p>
+        </div>
+
+        <!-- Main Heading -->
+        <h1>Diet Plan Based on Your Goals</h1>
+
+        <!-- Breakfast Section -->
+        <h2>Breakfast</h2>
+        <div class="diet-section">
+            <ul>
+                {% for meal in meals.get('Breakfast', []) %}
+                    <li>{{ meal }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- Lunch Section -->
+        <h2>Lunch</h2>
+        <div class="diet-section">
+            <ul>
+                {% for meal in meals.get('Lunch', []) %}
+                    <li>{{ meal }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- Dinner Section -->
+        <h2>Dinner</h2>
+        <div class="diet-section">
+            <ul>
+                {% for meal in meals.get('Dinner', []) %}
+                    <li>{{ meal }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- Snack Section -->
+        <h2>Snack</h2>
+        <div class="diet-section">
+            <ul>
+                {% for meal in meals.get('Snack', []) %}
+                    <li>{{ meal }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- Footer with Home Link -->
+        <!-- Footer with Home Link -->
+<div class="footer">
+    <p><a href="{{ url_for('home') }}">Go to Home</a></p>
+</div>
+
+    </div>
+</body>
+</html>
