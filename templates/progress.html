@@ -5,44 +5,150 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Progress</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    <!-- Add any additional CSS links or JS libraries here -->
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to right, #e6f2f1, #f8f8f8);
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 30px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h2 {
+            color: #2e7d6d;
+        }
+
+        h1 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 24px;
+            margin-top: 30px;
+        }
+
+        .bmi-section, .workout-progress, .diet-progress, .recent-updates {
+            margin-bottom: 30px;
+            background: #f1f8f6;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #81c784;
+        }
+
+        .card {
+            background: #e8f5e9;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border-left: 5px solid #4caf50;
+        }
+
+        .recent-updates ul, .diet-progress ul, .workout-progress ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        li {
+            margin: 8px 0;
+            padding-left: 10px;
+            position: relative;
+        }
+
+        li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: #4caf50;
+        }
+
+        strong {
+            color: #388e3c;
+        }
+
+        hr {
+            border: none;
+            height: 1px;
+            background-color: #ddd;
+            margin: 40px 0 20px;
+        }
+
+        p {
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        ul {
+            font-size: 16px;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1>Progress Tracker</h1>
-        
+        <h1>🌿 Your Health Progress</h1>
+
         <!-- User's BMI -->
         <div class="bmi-section">
             <h2>Your Current BMI: {{ bmi }}</h2>
-            <p>Based on your BMI, you are categorized as: 
+            <p>Based on your BMI, you are categorized as:
                 {% if bmi < 18.5 %}
-                    Underweight
+                    <strong>Underweight</strong>
                 {% elif 18.5 <= bmi < 25 %}
-                    Normal weight
+                    <strong>Normal weight</strong>
                 {% else %}
-                    Overweight
+                    <strong>Overweight</strong>
                 {% endif %}
             </p>
         </div>
-        
+
         <!-- Workout Progress -->
         <div class="workout-progress">
-            <h2>Workout Progress</h2>
-            <p>Total Workouts Completed: {{ workout_count }}</p>
-            <!-- Optionally, you can add a chart or graph here -->
+            <h2>🏋️ Workout Progress</h2>
+            <p>Total Workouts Completed: <strong>{{ workout_count }}</strong></p>
         </div>
 
         <!-- Diet Progress -->
         <div class="diet-progress">
-            <h2>Diet Progress</h2>
-            <p>Diet Adherence: {{ diet_adherence }}%</p>
-            <!-- Optional: Add a progress bar or chart to visualize adherence -->
+            <h2>🥗 Diet Progress</h2>
+            <p>Diet Adherence: <strong>{{ diet_adherence }}%</strong></p>
         </div>
-        
+
+        <!-- Feedback Section -->
+        {% if feedback %}
+            <div class="card">
+                <h3>📊 Your Progress Report</h3>
+                <div>{{ feedback | safe }}</div>
+            </div>
+        {% endif %}
+
+        <hr>
+
+        <!-- Weight Feedback -->
+        <h2>⚖️ Weight Progress</h2>
+        <p><strong>Feedback:</strong> {{ weight_feedback }}</p>
+
+        {% if weight_trend %}
+            <h3>📅 Recent Weight Entries</h3>
+            <ul>
+                {% for entry in weight_trend %}
+                    <li>{{ entry }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
 
         <!-- Recent Updates -->
         <div class="recent-updates">
-            <h2>Recent Updates</h2>
+            <h2>📝 Recent Updates</h2>
             <ul>
                 {% for entry in recent_updates %}
                     <li>{{ entry }}</li>
@@ -51,7 +157,6 @@
                 {% endfor %}
             </ul>
         </div>
-        
     </div>
 </body>
 </html>

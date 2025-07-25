@@ -3,6 +3,8 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import requests
+from flask_migrate import Migrate
+
 from datetime import datetime
 
 # For password reset token and email sending
@@ -23,6 +25,8 @@ db_path = os.path.join(db_dir, 'users.db')
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+
 
 # --- Email configuration ---
 MAIL_SERVER = "smtp.gmail.com"
@@ -66,6 +70,7 @@ class User(db.Model):
 
     workouts = db.relationship('Workout', back_populates='user')
     diet_logs = db.relationship('DietLog', back_populates='user')
+    # weight_logs backref is already defined in WeightLog
 
 class Workout(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -73,6 +78,10 @@ class Workout(db.Model):
     date = db.Column(db.DateTime, default=datetime.utcnow)
     workout_type = db.Column(db.String(100))
     duration = db.Column(db.Integer)  # in minutes
+
+    sets = db.Column(db.Integer)       
+    reps = db.Column(db.Integer)       
+    intensity = db.Column(db.String(50))
 
     user = db.relationship('User', back_populates='workouts')
 
@@ -84,6 +93,22 @@ class DietLog(db.Model):
     calories = db.Column(db.Integer)
 
     user = db.relationship('User', back_populates='diet_logs')
+
+class WeightLog(db.Model):
+    __tablename__ = 'weight_log'  # optional but recommended
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    date = db.Column(db.DateTime, default=datetime.utcnow)
+    weight = db.Column(db.Float, nullable=False)
+
+    user = db.relationship('User', backref='weight_logs')
+# Make models importable from app
+__all__ = ['app', 'db', 'User', 'Workout', 'DietLog', 'WeightLog']
+
+
+  
+
+
 
 # Initialize the database
 with app.app_context():
@@ -149,15 +174,30 @@ def bmicalculation():
     return render_template('bmicalculation.html')
 @app.route('/update_progress', methods=['POST'])
 def update_progress():
-    # Example logic for updating progress
-    # You can fetch form data like this:
-    workout_done = request.form.get('workout_done')
-    duration = request.form.get('duration')
-    notes = request.form.get('notes')
+    user_id = session.get('user_id')
+    if not user_id:
+        flash("Please login to track progress.", "warning")
+        return redirect(url_for('signin'))
 
-    # Save to DB or session (you decide)
-    flash('Progress updated successfully!')
+    sets = request.form.get('sets', type=int)
+    reps = request.form.get('reps', type=int)
+    duration = request.form.get('duration', type=int)
+    intensity = request.form.get('intensity')
+
+    new_workout = Workout(
+        user_id=user_id,
+        sets=sets,
+        reps=reps,
+        duration=duration,
+        intensity=intensity
+    )
+
+    db.session.add(new_workout)
+    db.session.commit()
+
+    flash("Progress updated successfully! Keep up the good work!", "success")
     return redirect(url_for('progress'))
+
 
 
 @app.route('/save_bmi', methods=['POST'])
@@ -280,8 +320,9 @@ def workout():
 
     return render_template("workouts.html", bmi=bmi, preference=preference, videos=video_recommendations)
 
-@app.route('/diet')
+@app.route('/diet', endpoint='diet')
 def diet():
+    
     user_id = session.get('user_id')
     if not user_id:
         return redirect(url_for('signin'))
@@ -320,20 +361,157 @@ def diet():
             'Snack': ['Yogurt', 'Banana']
         }
 
-    return render_template('diet.html', meals=meals)
+    return render_template(
+        'diet.html',
+        meals=meals,
+        bmi=user.bmi,
+        preference=user.diet_preference
+    )
 
-@app.route('/progress')
-def progress():
+@app.route('/progress', endpoint='progress')
+def update_progress():
     user_id = session.get('user_id')
     if not user_id:
+        flash("Please login to view progress.", "warning")
         return redirect(url_for('signin'))
 
     user = User.query.get(user_id)
-    if not user or not user.bmi:
-        return redirect(url_for('bmicalculation'))
+    if not user:
+        flash("User not found.", "danger")
+        return redirect(url_for('signin'))
 
-    return render_template('progress.html', bmi=user.bmi)
+    # Workouts
+    workouts = Workout.query.filter_by(user_id=user_id).order_by(Workout.date.desc()).all()
+    workout_count = len(workouts)
 
+    if workout_count == 0:
+        feedback = "Let's get started! Track your first workout today."
+        recent_updates = []
+    else:
+        workouts_sorted = sorted(workouts, key=lambda w: w.date, reverse=True)
+        latest = workouts_sorted[0]
+        past = workouts_sorted[1:6] if len(workouts_sorted) > 1 else []
+
+        if past:
+            avg_sets_past = sum(w.sets for w in past) / len(past)
+            avg_reps_past = sum(w.reps for w in past) / len(past)
+            avg_duration_past = sum(w.duration for w in past) / len(past)
+
+            sets_change = latest.sets - avg_sets_past
+            reps_change = latest.reps - avg_reps_past
+            duration_change = latest.duration - avg_duration_past
+
+            feedback = "📊 <strong>Your Progress Report:</strong><br>"
+
+            if sets_change > 0:
+                feedback += f"➕ Sets increased by <b>{sets_change:.1f}</b> compared to average.<br>"
+            elif sets_change < 0:
+                feedback += f"⚠️ Sets dropped by <b>{abs(sets_change):.1f}</b>. Try to stay consistent.<br>"
+
+            if reps_change > 0:
+                feedback += f"💪 Reps improved by <b>{reps_change:.1f}</b> — great job!<br>"
+            elif reps_change < 0:
+                feedback += f"📉 Reps decreased by <b>{abs(reps_change):.1f}</b>. Keep pushing!<br>"
+
+            if duration_change > 0:
+                feedback += f"⏱️ Duration increased by <b>{duration_change:.1f}</b> minutes — awesome!<br>"
+            elif duration_change < 0:
+                feedback += f"⏳ Workout time down by <b>{abs(duration_change):.1f}</b> mins.<br>"
+
+            if latest.intensity in ['High', 'Very High']:
+                feedback += f"🔥 You're doing high-intensity workouts. Keep it up!<br>"
+            elif latest.intensity == 'Moderate':
+                feedback += f"👌 Moderate intensity. Try pushing to high next time.<br>"
+            else:
+                feedback += f"💤 Intensity was low. Consider increasing for better gains.<br>"
+
+        else:
+            feedback = "👏 Great start! Track more workouts to see trends."
+
+        recent_updates = [
+            f"📅 {w.date.strftime('%Y-%m-%d')}: {w.sets} sets, {w.reps} reps, {w.intensity} intensity, {w.duration} mins"
+            for w in workouts_sorted[:5]
+        ]
+
+    # Weight feedback logic (improved)
+    weight_logs = WeightLog.query.filter_by(user_id=user_id).order_by(WeightLog.date.desc()).all()
+    weight_feedback = ""
+    weight_trend = []
+
+    if weight_logs and len(weight_logs) > 1:
+        latest_wt = float(weight_logs[0].weight)
+        previous_wt = float(weight_logs[1].weight)
+        change = latest_wt - previous_wt
+
+        # DEBUG: Remove/comment after testing
+        print(f"Latest weight: {latest_wt}, Previous weight: {previous_wt}, Change: {change}")
+        print(f"User BMI: {user.bmi}")
+
+        weight_trend = [
+            f"{log.date.strftime('%Y-%m-%d')} — {log.weight:.1f} kg" for log in weight_logs[:5]
+        ]
+
+        if user.bmi is not None:
+            # Underweight
+            if user.bmi < 18.5:
+                if change > 1.0:
+                    weight_feedback = "👏 Great! You're gaining significant weight — keep it up with a nutritious diet!"
+                elif change > 0.2:
+                    weight_feedback = "👍 Good progress! Small weight gain, stay consistent."
+                elif change > 0:
+                    weight_feedback = "🙂 Slight weight gain detected, try adding more protein and calories."
+                elif change == 0:
+                    weight_feedback = "⚠️ No weight gain or loss. Consider revising your nutrition plan."
+                else:  # change < 0
+                    weight_feedback = "⚠️ Weight loss detected. Try to increase calorie intake and consult a nutritionist."
+
+            # Overweight
+            elif user.bmi > 25:
+                if change < -1.0:
+                    weight_feedback = "🎉 Excellent progress! Significant weight loss observed."
+                elif change < -0.2:
+                    weight_feedback = "✅ Good job! Moderate weight loss, keep going."
+                elif change < 0:
+                    weight_feedback = "🙂 Slight weight loss detected, stay consistent."
+                elif change == 0:
+                    weight_feedback = "⚠️ No weight gain or loss. Keep monitoring your diet and activity."
+                else:  # change > 0
+                    weight_feedback = "⚠️ Weight gain detected. Consider reducing calories or increasing activity."
+
+            # Normal BMI range
+            else:
+                if abs(change) < 0.2:
+                    weight_feedback = "💪 Weight is stable — good job maintaining your weight!"
+                elif 0.2 <= change < 1.0:
+                    weight_feedback = "⚠️ Slight weight gain, watch portion sizes and activity."
+                elif change >= 1.0:
+                    weight_feedback = "⚠️ Noticeable weight gain. Monitor your diet carefully."
+                elif -1.0 < change <= -0.2:
+                    weight_feedback = "⚠️ Slight weight loss, ensure you’re eating enough."
+                elif change <= -1.0:
+                    weight_feedback = "⚠️ Significant weight loss detected. Monitor your health closely."
+        else:
+            weight_feedback = "BMI data unavailable to generate weight feedback."
+    else:
+        if weight_logs:
+            weight_feedback = "📍 Only one weight entry found. Add more to track your progress."
+        else:
+            weight_feedback = "No weight entries found. Start logging your weight."
+
+    # Placeholder diet adherence (can replace with real data)
+    diet_adherence = 75
+
+    # Render template with all progress info
+    return render_template(
+        'progress.html',
+        bmi=user.bmi or 0,
+        workout_count=workout_count,
+        diet_adherence=diet_adherence,
+        recent_updates=recent_updates,
+        feedback=feedback,
+        weight_feedback=weight_feedback,
+        weight_trend=weight_trend
+    )
 
 
 # ------------ Password Reset Routes ------------
@@ -390,6 +568,24 @@ def reset_password(token):
                 return redirect(url_for('forgot_password'))
 
     return render_template('reset_password.html')
+@app.route('/submit_weight', methods=['POST'])
+def submit_weight():
+    user_id = session.get('user_id')
+    if not user_id:
+        flash("Please log in to submit your weight.", "warning")
+        return redirect(url_for('signin'))
+
+    weight = request.form.get('weight', type=float)
+    if weight:
+        log = WeightLog(user_id=user_id, weight=weight)
+        db.session.add(log)
+        db.session.commit()
+        flash("Weight entry submitted successfully!", "success")
+
+    return redirect(url_for('progress'))
+
+
+
 
 # --------------------------- MAIN ---------------------------
 if __name__ == '__main__':
