@@ -331,9 +331,8 @@ def workout():
 
     return render_template("workouts.html", bmi=bmi, preference=preference, videos=video_recommendations)
 
-@app.route('/diet', endpoint='diet')
+@app.route('/diet')
 def diet():
-    
     user_id = session.get('user_id')
     if not user_id:
         return redirect(url_for('signin'))
@@ -342,29 +341,31 @@ def diet():
     if not user or not user.bmi or not user.diet_preference:
         return redirect(url_for('bmicalculation'))
 
-    # Simple example logic for meal generation
-    if user.diet_preference == "high protein":
+    # ✅ Normalize user input here
+    preference = user.diet_preference.strip().lower()
+
+    if preference == "high protein":
         meals = {
             'Breakfast': ['Scrambled eggs', 'Greek yogurt'],
             'Lunch': ['Grilled chicken breast', 'Quinoa salad'],
             'Dinner': ['Steak with broccoli', 'Cottage cheese'],
             'Snack': ['Protein bar', 'Boiled eggs']
         }
-    elif user.diet_preference == "low carbs":
+    elif preference == "low carb":
         meals = {
             'Breakfast': ['Avocado with eggs', 'Herbal tea'],
             'Lunch': ['Zucchini noodles with pesto', 'Tofu stir-fry'],
             'Dinner': ['Grilled fish', 'Spinach salad'],
             'Snack': ['Nuts', 'Cucumber slices']
         }
-    elif user.diet_preference == "vegetarian":
+    elif preference == "vegetarian":
         meals = {
             'Breakfast': ['Oatmeal with fruits', 'Smoothie'],
             'Lunch': ['Chickpea curry', 'Brown rice'],
             'Dinner': ['Paneer tikka', 'Vegetable soup'],
             'Snack': ['Fruit salad', 'Roasted peanuts']
         }
-    else:  # mixed
+    else:
         meals = {
             'Breakfast': ['Boiled eggs', 'Toast with peanut butter'],
             'Lunch': ['Chicken wrap', 'Fruit'],
@@ -378,6 +379,7 @@ def diet():
         bmi=user.bmi,
         preference=user.diet_preference
     )
+
 
 
 @app.route('/progress', endpoint='progress')
