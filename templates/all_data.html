@@ -37,7 +37,15 @@
   <table>
     <thead>
       <tr>
-        <th>ID</th><th>Name</th><th>Email</th><th>Password</th><th>BMI</th><th>Preferred Exercise</th><th>Diet Preference</th><th>BMI Category</th>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Password</th>
+        <th>BMI</th>
+        <th>Preferred Exercise</th>
+        <th>Diet Preference</th>
+        <th>BMI Category</th>
+        <th>Admin</th> <!-- Added is_admin column -->
       </tr>
     </thead>
     <tbody>
@@ -46,7 +54,7 @@
         <td>{{ user.id }}</td>
         <td>{{ user.name }}</td>
         <td>{{ user.email }}</td>
-        <td>{{ user.password }}</td> <!-- Be careful showing passwords in real apps -->
+        <td>{{ user.password_hash }}</td>
         <td>{{ user.bmi if user.bmi is not none else 'N/A' }}</td>
         <td>{{ user.preferred_exercise_type or 'N/A' }}</td>
         <td>{{ user.diet_preference or 'N/A' }}</td>
@@ -63,9 +71,10 @@
             Obese
           {% endif %}
         </td>
+        <td>{{ 'Yes' if user.is_admin else 'No' }}</td> <!-- Show admin status -->
       </tr>
       {% else %}
-      <tr><td colspan="8">No users found.</td></tr>
+      <tr><td colspan="9">No users found.</td></tr>
       {% endfor %}
     </tbody>
   </table>
@@ -74,7 +83,12 @@
   <table>
     <thead>
       <tr>
-        <th>ID</th><th>User ID</th><th>Workout Date</th><th>Type</th><th>Duration (mins)</th><th>Intensity</th>
+        <th>ID</th>
+        <th>User ID</th>
+        <th>Workout Date</th>
+        <th>Type</th>
+        <th>Duration (mins)</th>
+        <th>Intensity</th>
       </tr>
     </thead>
     <tbody>
@@ -97,7 +111,12 @@
   <table>
     <thead>
       <tr>
-        <th>ID</th><th>User ID</th><th>Date</th><th>Meal Type</th><th>Calories</th><th>Notes</th>
+        <th>ID</th>
+        <th>User ID</th>
+        <th>Date</th>
+        <th>Meal Type</th>
+        <th>Calories</th>
+        <th>Notes</th>
       </tr>
     </thead>
     <tbody>
@@ -120,7 +139,10 @@
   <table>
     <thead>
       <tr>
-        <th>ID</th><th>User ID</th><th>Date</th><th>Weight (kg)</th>
+        <th>ID</th>
+        <th>User ID</th>
+        <th>Date</th>
+        <th>Weight (kg)</th>
       </tr>
     </thead>
     <tbody>
@@ -133,6 +155,104 @@
       </tr>
       {% else %}
       <tr><td colspan="4">No weight logs found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h1>Workout Plans</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>BMI Category</th>
+        <th>Exercise Type</th>
+        <th>Plan Details</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for plan in workout_plans %}
+      <tr>
+        <td>{{ plan.id }}</td>
+        <td>{{ plan.bmi_category }}</td>
+        <td>{{ plan.exercise_type }}</td>
+        <td>{{ plan.plan_details }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4">No workout plans found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h1>Diet Plans</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>BMI Category</th>
+        <th>Diet Preference</th>
+        <th>Plan Details</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for plan in diet_plans %}
+      <tr>
+        <td>{{ plan.id }}</td>
+        <td>{{ plan.bmi_category }}</td>
+        <td>{{ plan.diet_preference }}</td>
+        <td>{{ plan.plan_details }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4">No diet plans found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h1>Meal Plans</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Diet Plan ID</th>
+        <th>Meal Type</th>
+        <th>Food Items</th>
+        <th>Calories</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for meal in meal_plans %}
+      <tr>
+        <td>{{ meal.id }}</td>
+        <td>{{ meal.diet_plan_id }}</td>
+        <td>{{ meal.meal_type or 'N/A' }}</td>
+        <td>{{ meal.food_items or 'N/A' }}</td>
+        <td>{{ meal.calories or 'N/A' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5">No meal plans found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h1>Workout Videos</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Workout Plan ID</th>
+        <th>Title</th>
+        <th>URL</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for video in workout_videos %}
+      <tr>
+        <td>{{ video.id }}</td>
+        <td>{{ video.workout_plan_id }}</td>
+        <td>{{ video.title or 'N/A' }}</td>
+        <td><a href="{{ video.url }}" target="_blank">{{ video.url }}</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4">No workout videos found.</td></tr>
       {% endfor %}
     </tbody>
   </table>

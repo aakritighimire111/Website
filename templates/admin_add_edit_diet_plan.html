@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>{{ action }} Diet Plan</title>
+  <style>
+    /* Add your styles here or keep existing */
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 2em auto;
+    }
+    label {
+      display: block;
+      margin-top: 1em;
+      font-weight: bold;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 0.5em;
+      margin-top: 0.5em;
+      box-sizing: border-box;
+    }
+    .form-actions {
+      margin-top: 1.5em;
+    }
+    button {
+      padding: 0.7em 1.5em;
+      font-size: 1em;
+    }
+    a {
+      margin-left: 1em;
+      text-decoration: none;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>{{ action }} Diet Plan</h2>
+    <form method="POST">
+      <!-- Removed Diet Plan Name since it's not in your DB -->
+      
+      <label for="bmi_category">BMI Category:</label>
+      <input type="text" id="bmi_category" name="bmi_category" required
+        value="{{ plan.bmi_category if plan else '' }}" />
+
+      <label for="diet_preference">Diet Preference:</label>
+      <input type="text" id="diet_preference" name="diet_preference" required
+        value="{{ plan.diet_preference if plan else '' }}" />
+
+      <label for="plan_details">Plan Details:</label>
+      <textarea id="plan_details" name="plan_details" rows="5" required>{{ plan.plan_details if plan else '' }}</textarea>
+
+      <div class="form-actions">
+        <button type="submit">{{ action }}</button>
+        <a href="{{ url_for('admin_diet_plans') }}">Cancel</a>
+      </div>
+    </form>
+  </div>
+</body>
+</html>

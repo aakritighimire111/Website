@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Manage Workouts</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 30px auto;
+      max-width: 900px;
+      background: #f9f9f9;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+      margin-bottom: 20px;
+      font-weight: 700;
+    }
+    .button-link {
+      display: inline-block;
+      margin-bottom: 15px;
+      padding: 10px 18px;
+      background-color: #2980b9;
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      border-radius: 5px;
+      transition: background-color 0.3s ease;
+    }
+    .button-link:hover {
+      background-color: #1f6391;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    thead {
+      background-color: #2980b9;
+      color: white;
+    }
+    th, td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+      vertical-align: middle;
+    }
+    tbody tr:hover {
+      background-color: #f1f8ff;
+    }
+    td:last-child {
+      width: 130px;
+    }
+    a.action-link {
+      color: #2980b9;
+      font-weight: 600;
+      margin-right: 12px;
+      text-decoration: none;
+    }
+    a.action-link:hover {
+      text-decoration: underline;
+    }
+    form {
+      display: inline;
+    }
+    button {
+      background-color: #c0392b;
+      border: none;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #922b21;
+    }
+    /* Responsive */
+    @media (max-width: 600px) {
+      table, thead, tbody, th, td, tr {
+        display: block;
+      }
+      thead tr {
+        display: none;
+      }
+      tbody tr {
+        margin-bottom: 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 12px;
+        background: #fff;
+      }
+      tbody td {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 10px;
+        border: none;
+        border-bottom: 1px solid #eee;
+      }
+      tbody td:last-child {
+        border-bottom: none;
+      }
+      tbody td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        color: #555;
+      }
+      td:last-child {
+        width: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Manage Workouts</h1>
+
+  <a href="{{ url_for('admin_add_workout') }}" class="button-link">+ Add New Workout</a>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>BMI Category</th>
+        <th>Exercise Type</th>
+        <th>Plan Details</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for workout in workouts %}
+      <tr>
+        <td data-label="ID">{{ workout.id }}</td>
+        <td data-label="BMI Category">{{ workout.bmi_category }}</td>
+        <td data-label="Exercise Type">{{ workout.exercise_type }}</td>
+        <td data-label="Plan Details">{{ workout.plan_details }}</td>
+        <td data-label="Actions">
+          <a href="{{ url_for('admin_edit_workout', workout_id=workout.id) }}" class="action-link">Edit</a>
+          <form action="{{ url_for('admin_delete_workout', workout_id=workout.id) }}" method="POST" onsubmit="return confirm('Delete this workout?');">
+            <button type="submit">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" style="text-align:center; padding: 20px;">No workouts found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+</body>
+</html>

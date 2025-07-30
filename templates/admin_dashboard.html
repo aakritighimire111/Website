@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Dashboard - Calorie Tracker</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f0f2f5;
+      margin: 0;
+      padding: 40px;
+      color: #333;
+    }
+
+    .dashboard-container {
+      max-width: 900px;
+      margin: auto;
+      background: #fff;
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      font-weight: 700;
+      color: #2c3e50;
+    }
+
+    p {
+      font-size: 1.2rem;
+      margin-bottom: 40px;
+      color: #555;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      display: flex;
+      gap: 30px;
+      flex-wrap: wrap;
+    }
+
+    ul li {
+      flex: 1 1 250px;
+    }
+
+    a {
+      display: block;
+      background: #3498db;
+      color: white;
+      text-decoration: none;
+      padding: 18px 25px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      text-align: center;
+      box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    a:hover, a:focus {
+      background: #2980b9;
+      box-shadow: 0 6px 12px rgba(41, 128, 185, 0.5);
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-container">
+    <h1>Admin Dashboard</h1>
+    <p>Welcome, Admin! Manage your site efficiently using the options below.</p>
+    <ul>
+      <li><a href="{{ url_for('admin_users') }}">Manage Users</a></li>
+      <li><a href="{{ url_for('admin_diet_plans') }}">Manage Diet Plans</a></li>
+      <li><a href="{{ url_for('admin_workouts') }}">Manage Workouts</a></li>
+    </ul>
+  </div>
+</body>
+</html>
