@@ -64,6 +64,12 @@
       box-shadow: 0 6px 12px rgba(41, 128, 185, 0.5);
       outline: none;
     }
+
+    .back-button {
+      margin-top: 40px;
+      max-width: 200px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -72,9 +78,13 @@
     <p>Welcome, Admin! Manage your site efficiently using the options below.</p>
     <ul>
       <li><a href="{{ url_for('admin_users') }}">Manage Users</a></li>
-      <li><a href="{{ url_for('admin_diet_plans') }}">Manage Diet Plans</a></li>
-      <li><a href="{{ url_for('admin_workouts') }}">Manage Workouts</a></li>
+      <li><a href="{{ url_for('list_dietplans') }}">Manage Diet Plans</a></li>
+      <li><a href="{{ url_for('admin_workout_plans') }}">Manage Workouts</a></li>
     </ul>
+
+    <div class="back-button">
+      <a href="{{ url_for('signin') }}">← Back to Home</a>
+    </div>
   </div>
 </body>
 </html>

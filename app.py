@@ -8,6 +8,7 @@ from functools import wraps
 
 
 
+
 from datetime import datetime
 
 # For password reset token and email sending
@@ -123,52 +124,46 @@ class WeightLog(db.Model):
     weight = db.Column(db.Float, nullable=False)
 
     user = db.relationship('User', backref='weight_logs')
-class DietPlan(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(150), nullable=False)
-    bmi_category = db.Column(db.String(50))          # new column
-    diet_preference = db.Column(db.String(100))      # new column
-    description = db.Column(db.Text)                  # can be plan details or summary
 
+
+class DietPlan(db.Model):
+    __tablename__ = 'diet_plan'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), nullable=False)  # e.g., "High Protein Plan"
+    bmi_category = db.Column(db.String(50))            # e.g., "underweight", "normal", "overweight"
+    diet_preference = db.Column(db.String(100))        # e.g., "high protein", "low carb", "vegetarian"
+    description = db.Column(db.Text)                    # plan summary/details
+
+    # One DietPlan has many Meal items
+    meals = db.relationship('Meal', backref='diet_plan', cascade='all, delete-orphan')
 
 class Meal(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    diet_plan_id = db.Column(db.Integer, db.ForeignKey('diet_plan.id'))
-    meal_type = db.Column(db.String(50))  # Breakfast, Lunch, Dinner, Snack
-    item = db.Column(db.String(150))  # e.g., "Scrambled eggs"
+    __tablename__ = 'meal'
 
-    diet_plan = db.relationship('DietPlan', backref='meals')
+    id = db.Column(db.Integer, primary_key=True)
+    diet_plan_id = db.Column(db.Integer, db.ForeignKey('diet_plan.id'), nullable=False)
+    meal_type = db.Column(db.String(50), nullable=False)  # "Breakfast", "Lunch", "Dinner", "Snack"
+    item = db.Column(db.String(150), nullable=False)       # e.g., "Scrambled eggs"
+
+
 class WorkoutPlan(db.Model):
-    __tablename__ = 'workout_plan'
-
+    __tablename__ = 'workout_plans'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(150), nullable=False)  # e.g. "cardio", "strength", "yoga", "mixed"
-    bmi_category = db.Column(db.String(50))           # e.g. "underweight", "normal", "overweight"
+    name = db.Column(db.String(100), nullable=False)  # e.g. 'Underweight Plan'
+    bmi_category = db.Column(db.String(50), nullable=False)  # e.g. 'underweight', 'normal', 'overweight'
+    preference = db.Column(db.String(50), nullable=True)  # e.g. 'cardio', 'strength', 'yoga' for normal BMI plans
 
-    # One-to-many relationship with WorkoutVideo
-    videos = db.relationship(
-        'WorkoutVideo',
-        back_populates='workout_plan',
-        cascade='all, delete-orphan'
-    )
+    videos = db.relationship('WorkoutVideo', backref='plan', cascade="all, delete-orphan")
 
 class WorkoutVideo(db.Model):
-    __tablename__ = 'workout_video'
-
+    __tablename__ = 'workout_videos'
     id = db.Column(db.Integer, primary_key=True)
-    workout_plan_id = db.Column(db.Integer, db.ForeignKey('workout_plan.id'), nullable=False)
+    plan_id = db.Column(db.Integer, db.ForeignKey('workout_plans.id'), nullable=False)
     title = db.Column(db.String(200), nullable=False)
-    url = db.Column(db.String(300), nullable=False)
-
-    # Reference back to WorkoutPlan
-    workout_plan = db.relationship(
-        'WorkoutPlan',
-        back_populates='videos'
-    )
-
+    url = db.Column(db.String(500), nullable=False)
 # Make models importable from app
 __all__ = ['app', 'db', 'User', 'Workout', 'DietLog', 'WeightLog']
-# Decorators
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -177,14 +172,13 @@ def admin_required(f):
             flash("Please log in first.", "warning")
             return redirect(url_for('signin'))
         
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         if not user or not user.admin:
             flash("You do not have permission to access this page.", "danger")
             return redirect(url_for('signin'))
         
         return f(*args, **kwargs)
     return decorated_function
-
 @app.route('/admin')
 @admin_required
 def admin_dashboard():
@@ -203,155 +197,158 @@ def admin_delete_user(user_id):
     db.session.commit()
     flash('User deleted successfully.', 'success')
     return redirect(url_for('admin_users'))
-@app.route('/admin/diet-plans')
-@admin_required
-def admin_diet_plans():
+@app.route('/admin/dietplans')
+def list_dietplans():
     plans = DietPlan.query.all()
     return render_template('admin_diet_plans.html', plans=plans)
 
-@app.route('/admin/workouts')
-@admin_required
-def admin_workouts():
-    workouts = Workout.query.all()
-    return render_template('admin_workouts.html', workouts=workouts)
-# Show form to add diet plan
-from flask import request, render_template, redirect, url_for, flash
-
-@app.route('/admin_add_diet_plan', methods=['GET', 'POST'])
-def admin_add_diet_plan():
+@app.route('/admin/dietplans/add', methods=['GET', 'POST'])
+def add_dietplan():
     if request.method == 'POST':
-        bmi_category = request.form.get('bmi_category')
-        diet_preference = request.form.get('diet_preference')
-        plan_details = request.form.get('plan_details')
+        name = request.form['name']
+        bmi_category = request.form['bmi_category']
+        diet_preference = request.form['diet_preference']
+        description = request.form['description']
 
-        if not bmi_category or not diet_preference or not plan_details:
-            flash("Please fill in all the required fields.")
-            return render_template('admin_add_edit_diet_plan.html', action="Add", plan=request.form)
-
-        new_plan = DietPlan(
-            bmi_category=bmi_category.strip(),
-            diet_preference=diet_preference.strip(),
-            plan_details=plan_details.strip()
+        plan = DietPlan(
+            name=name,
+            bmi_category=bmi_category,
+            diet_preference=diet_preference,
+            description=description
         )
-        db.session.add(new_plan)
+        db.session.add(plan)
         db.session.commit()
+        flash('Diet plan added successfully!')
+        return redirect(url_for('list_dietplans'))
 
-        flash("Diet plan added successfully!")
-        return redirect(url_for('admin_diet_plans'))
+    return render_template('admin_add_diet_plan.html')
 
-    return render_template('admin_add_edit_diet_plan.html', action="Add", plan=None)
-
-
-
-# Show form to edit diet plan
-@app.route('/admin/diet-plans/edit/<int:plan_id>', methods=['GET', 'POST'])
-@admin_required
-def admin_edit_diet_plan(plan_id):
+@app.route('/admin/dietplans/<int:plan_id>/edit', methods=['GET', 'POST'])
+def edit_dietplan(plan_id):
     plan = DietPlan.query.get_or_404(plan_id)
-
     if request.method == 'POST':
+        plan.name = request.form['name']
         plan.bmi_category = request.form['bmi_category']
         plan.diet_preference = request.form['diet_preference']
-        plan.plan_details = request.form['plan_details']
-
+        plan.description = request.form['description']
         db.session.commit()
-        flash('Diet plan updated successfully.', 'success')
-        return redirect(url_for('admin_diet_plans'))
+        flash('Diet plan updated successfully!')
+        return redirect(url_for('list_dietplans'))
 
-    return render_template('admin_add_edit_diet_plan.html', action="Edit", plan=plan)
-# Show form to add workout
-@app.route('/admin/workouts/add', methods=['GET', 'POST'])
-@admin_required
-def admin_add_workout():
-    if request.method == 'POST':
-        bmi_category = request.form['bmi_category']
-        exercise_type = request.form['exercise_type']
-        plan_details = request.form['plan_details']
+    return render_template('admin_edit_diet_plan.html', plan=plan)
 
-        new_workout = Workout(
-            bmi_category=bmi_category,
-            exercise_type=exercise_type,
-            plan_details=plan_details
-        )
-        db.session.add(new_workout)
-        db.session.commit()
-        flash('Workout added successfully.', 'success')
-        return redirect(url_for('admin_workouts'))
-
-    return render_template('admin_add_edit_workout.html', action="Add", workout=None)
-
-
-# Show form to edit workout
-@app.route('/admin/workouts/edit/<int:workout_id>', methods=['GET', 'POST'])
-@admin_required
-def admin_edit_workout(workout_id):
-    workout = Workout.query.get_or_404(workout_id)
-
-    if request.method == 'POST':
-        workout.bmi_category = request.form['bmi_category']
-        workout.exercise_type = request.form['exercise_type']
-        workout.plan_details = request.form['plan_details']
-
-        db.session.commit()
-        flash('Workout updated successfully.', 'success')
-        return redirect(url_for('admin_workouts'))
-
-    return render_template('admin_add_edit_workout.html', action="Edit", workout=workout) 
-
-@app.route('/admin/diet-plans/delete/<int:plan_id>', methods=['POST'])
-@admin_required
-def admin_delete_diet_plan(plan_id):
+@app.route('/admin/dietplans/<int:plan_id>/delete', methods=['POST'])
+def delete_dietplan(plan_id):
     plan = DietPlan.query.get_or_404(plan_id)
     db.session.delete(plan)
     db.session.commit()
-    flash('Diet plan deleted successfully.', 'success')
-    return redirect(url_for('admin_diet_plans'))
+    flash('Diet plan deleted successfully!')
+    return redirect(url_for('list_dietplans'))
 
-@app.route('/admin/workouts/delete/<int:workout_id>', methods=['POST'])
-@admin_required
-def admin_delete_workout(workout_id):
-    workout = Workout.query.get_or_404(workout_id)
-    db.session.delete(workout)
+@app.route('/admin/dietplans/<int:plan_id>/meals', methods=['GET', 'POST'])
+def manage_meals(plan_id):
+    plan = DietPlan.query.get_or_404(plan_id)
+    if request.method == 'POST':
+        meal_type = request.form['meal_type']
+        item = request.form['item']
+        meal = Meal(diet_plan_id=plan.id, meal_type=meal_type, item=item)
+        db.session.add(meal)
+        db.session.commit()
+        flash('Meal added successfully!')
+        return redirect(url_for('manage_meals', plan_id=plan.id))
+
+    meals = Meal.query.filter_by(diet_plan_id=plan.id).all()
+    return render_template('admin_manage_meals.html', plan=plan, meals=meals)
+
+@app.route('/admin/meals/<int:meal_id>/delete', methods=['POST'])
+def delete_meal(meal_id):
+    meal = Meal.query.get_or_404(meal_id)
+    plan_id = meal.diet_plan_id
+    db.session.delete(meal)
     db.session.commit()
-    flash('Workout deleted successfully.', 'success')
-    return redirect(url_for('admin_workouts'))
+    flash('Meal deleted successfully!')
+    return redirect(url_for('manage_meals', plan_id=plan_id))
 
-@app.route('/admin/workouts/<int:plan_id>/videos/add', methods=['GET', 'POST'])
+
+@app.route('/admin/workout-plans')
+@admin_required
+def admin_workout_plans():
+    plans = WorkoutPlan.query.all()
+    return render_template('admin_workout_plans.html', plans=plans)
+@app.route('/admin/workout-plans/add', methods=['GET', 'POST'])
+@admin_required
+def admin_add_workout_plan():
+    if request.method == 'POST':
+        name = request.form['name']
+        bmi_category = request.form['bmi_category']
+        preference = request.form.get('preference') or None
+        new_plan = WorkoutPlan(name=name, bmi_category=bmi_category, preference=preference)
+        db.session.add(new_plan)
+        db.session.commit()
+        flash('Workout plan added.', 'success')
+        return redirect(url_for('admin_workout_plans'))
+    return render_template('admin_add_edit_workout_plan.html', action="Add", plan=None)
+@app.route('/admin/workout-plans/<int:plan_id>/edit', methods=['GET', 'POST'])
+@admin_required
+def admin_edit_workout_plan(plan_id):
+    plan = WorkoutPlan.query.get_or_404(plan_id)
+    if request.method == 'POST':
+        plan.name = request.form['name']
+        plan.bmi_category = request.form['bmi_category']
+        plan.preference = request.form.get('preference') or None
+        db.session.commit()
+        flash('Workout plan updated.', 'success')
+        return redirect(url_for('admin_workout_plans'))
+    return render_template('admin_add_edit_workout_plan.html', action="Edit", plan=plan)
+@app.route('/admin/workout-plans/<int:plan_id>/delete', methods=['POST'])
+@admin_required
+def admin_delete_workout_plan(plan_id):
+    plan = WorkoutPlan.query.get_or_404(plan_id)
+    db.session.delete(plan)
+    db.session.commit()
+    flash('Workout plan deleted.', 'success')
+    return redirect(url_for('admin_workout_plans'))
+@app.route('/admin/workout-plans/<int:plan_id>/videos')
+@admin_required
+def admin_workout_plan_videos(plan_id):
+    plan = WorkoutPlan.query.get_or_404(plan_id)
+    videos = WorkoutVideo.query.filter_by(plan_id=plan.id).all()
+    return render_template('admin_workout_videos.html', plan=plan, videos=videos)
+@app.route('/admin/workout-plans/<int:plan_id>/videos/add', methods=['GET', 'POST'])
 @admin_required
 def admin_add_workout_video(plan_id):
-    workout_plan = WorkoutPlan.query.get_or_404(plan_id)
-
+    plan = WorkoutPlan.query.get_or_404(plan_id)
     if request.method == 'POST':
         title = request.form['title']
         url = request.form['url']
-
-        new_video = WorkoutVideo(
-            workout_plan_id=workout_plan.id,
-            title=title,
-            url=url
-        )
-        db.session.add(new_video)
+        video = WorkoutVideo(plan_id=plan.id, title=title, url=url)
+        db.session.add(video)
         db.session.commit()
-        flash('Video added successfully.', 'success')
-        return redirect(url_for('admin_edit_workout', workout_id=workout_plan.id))
-
-    return render_template('admin_add_edit_workout_video.html', workout_plan=workout_plan)
-@app.route('/admin/workouts/videos/delete/<int:video_id>', methods=['POST'])
+        flash('Workout video added.', 'success')
+        return redirect(url_for('admin_workout_plan_videos', plan_id=plan.id))
+    return render_template('admin_add_edit_workout_video.html', action="Add", plan=plan, video=None)
+@app.route('/admin/workout-videos/<int:video_id>/edit', methods=['GET', 'POST'])
+@admin_required
+def admin_edit_workout_video(video_id):
+    video = WorkoutVideo.query.get_or_404(video_id)
+    plan = video.plan
+    if request.method == 'POST':
+        video.title = request.form['title']
+        video.url = request.form['url']
+        db.session.commit()
+        flash('Workout video updated.', 'success')
+        return redirect(url_for('admin_workout_plan_videos', plan_id=plan.id))
+    return render_template('admin_add_edit_workout_video.html', action="Edit", plan=plan, video=video)
+@app.route('/admin/workout-videos/<int:video_id>/delete', methods=['POST'])
 @admin_required
 def admin_delete_workout_video(video_id):
     video = WorkoutVideo.query.get_or_404(video_id)
-    plan_id = video.workout_plan_id
+    plan_id = video.plan_id
     db.session.delete(video)
     db.session.commit()
-    flash('Workout video deleted successfully.', 'success')
-    return redirect(url_for('admin_edit_workout', workout_id=plan_id))
+    flash('Workout video deleted.', 'success')
+    return redirect(url_for('admin_workout_plan_videos', plan_id=plan_id))
 
-
-
-
-
-
-  
 
 
 
@@ -435,15 +432,17 @@ def signin():
             session['user_id'] = user.id
             flash("Sign in successful!", "success")
 
-            if user.admin:  # <-- check this flag here
+            if user.admin:
                 return redirect(url_for('admin_dashboard'))
             else:
-                return redirect(url_for('bmicalculation'))
+                return redirect(url_for('next_page'))
         else:
             flash("Invalid credentials, please try again.", "danger")
-            return redirect(url_for('signin'))
+            # render template instead of redirect to avoid stacking flash messages
+            return render_template('signin.html')
 
     return render_template('signin.html')
+
 
 
 
@@ -537,27 +536,68 @@ def workout():
         return redirect(url_for('bmicalculation'))
 
     bmi = user.bmi
-    preference = user.preferred_exercise_type.lower()
+    preference = user.preferred_exercise_type.strip().lower()
+    video_recommendations = []
 
-    # Determine bmi_category (example):
+    # Underweight
     if bmi < 18.5:
-        bmi_cat = "underweight"
+        video_recommendations = [
+            {"title": "Do This Exercise EVERY DAY for Gains!", "url": "https://www.youtube.com/watch?v=u6PNjgn1ocM"},
+            {"title": "Workout Program For Skinny Guys Trying To Get Bigger", "url": "https://www.youtube.com/watch?v=Qi0p-6XcTX0"},
+            {"title": "5 MUST DO Exercises For Skinny Guys (NO EQUIPMENT)", "url": "https://www.youtube.com/watch?v=Y9hiyIo963A"},
+            {"title": "5-minute Workout For SKINNY GUYS GAIN MUSCLE At Home", "url": "https://www.youtube.com/watch?v=IysRUAjVCpg"},
+            {"title": "INTENSE Weight Gain Workout - OMG!", "url": "https://www.youtube.com/watch?v=W7mN-i0J7M0"}
+        ]
+
+    # Normal BMI
     elif 18.5 <= bmi < 25:
-        bmi_cat = "normal"
+        if preference == "cardio":
+            video_recommendations = [
+                {"title": "15 MIN BEGINNER CARDIO Workout (At Home No Equipment)", "url": "https://www.youtube.com/watch?v=VWj8ZxCxrYk"},
+                {"title": "Fat Burning, High Intensity, Low Impact Home Cardio Workout", "url": "https://www.youtube.com/watch?v=8oQ-WNJoYtM"},
+                {"title": "30 Minute Fat Burning Home Workout for Beginners", "url": "https://www.youtube.com/watch?v=gC_L9qAHVJ8"},
+                {"title": "15 MIN BEGINNER CARDIO WORKOUT (No Jumping)", "url": "https://www.youtube.com/watch?v=3oitzTfujXs"},
+                {"title": "30 MIN PUMPING CARDIO WORKOUT | Full Body", "url": "https://www.youtube.com/watch?v=kZDvg92tTMc"},
+                {"title": "30 MIN CARDIO AEROBICS WORKOUT - Move To The Beat", "url": "https://www.youtube.com/watch?v=vI5MzT-wIjs"},
+                {"title": "20 MIN CARDIO AEROBICS WORKOUT - Move To The Beat", "url": "https://www.youtube.com/watch?v=DMAxIrCAAZ0"},
+                {"title": "30 MIN CARDIO HIIT WORKOUT - ALL STANDING", "url": "https://www.youtube.com/watch?v=nbP7m0S0Ato"},
+                {"title": "Low Impact, All Standing CARDIO Workout. Beginner Friendly.", "url": "https://www.youtube.com/watch?v=ft9lgLOVhr4"},
+                {"title": "15 Minutes BEGINNER CARDIO Workout | Joe Wicks", "url": "https://www.youtube.com/watch?v=mnEQ3ezU3Sw"}
+            ]
+        elif preference == "strength":
+            video_recommendations = [
+                {"title": "17 Min Strength Training Workout for Beginners", "url": "https://www.youtube.com/watch?v=WIHy-ZnSndA"},
+                {"title": "30-minute NO REPEAT Strength Training for Beginners", "url": "https://www.youtube.com/watch?v=IMXX7A8vQGg"},
+                {"title": "Weight Training for Beginners & Seniors // 20 Minute Workout", "url": "https://www.youtube.com/watch?v=Qbv2edgrgvI"},
+                {"title": "20 Minute Full Body Strength Workout (No Equipment/No Repeat)", "url": "https://www.youtube.com/watch?v=Q2cMMnUuKYQ"},
+                {"title": "Strength Training for Beginners | Joe Wicks Workouts", "url": "https://www.youtube.com/watch?v=xO3NJ7A7w5o"}
+            ]
+        elif preference == "yoga":
+            video_recommendations = [
+                {"title": "10-Minute Yoga For Beginners | Start Yoga Here...", "url": "https://www.youtube.com/watch?v=j7rKKpwdXNE"},
+                {"title": "20 Min Full Body Daily Yoga Practice", "url": "https://www.youtube.com/watch?v=Cj_ZmFzxm1k"},
+                {"title": "Yoga With Adriene - YouTube Channel", "url": "https://www.youtube.com/c/yogawithadriene"}
+            ]
+        else:  # mixed/unknown
+            video_recommendations = [
+                {"title": "45-Min Mixed Cardio Workout (No Equipment Sweat Sesh!)", "url": "https://www.youtube.com/watch?v=Yf7dqygDtZE"},
+                {"title": "30 Minute Mixed Format Workout | 1.17.25", "url": "https://www.youtube.com/watch?v=k-S3s_U0dDw"},
+                {"title": "30 MIN CARDIO AEROBICS WORKOUT - Move To The Beat", "url": "https://www.youtube.com/watch?v=vI5MzT-wIjs"}
+            ]
+
+    # Overweight
     else:
-        bmi_cat = "overweight"
+        video_recommendations = [
+            {"title": "PLUS SIZE Full Body Workout / Obese Beginner Workout", "url": "https://www.youtube.com/watch?v=8IwNI8r-jo0"},
+            {"title": "Plus Size Beginner Workout / Low Impact / All Standing / 15 Mins", "url": "https://www.youtube.com/watch?v=Urv5kB3oYms"},
+            {"title": "BEGINNER WORKOUT (WHAT I DID WHILE OBESE)", "url": "https://m.youtube.com/watch?v=gNoSo4SQN2o"},
+            {"title": "PLUS SIZE/BEGINNER AT HOME WALKING WORKOUT (Low Impact)", "url": "https://www.youtube.com/watch?v=xxLLOW7-57w"},
+            {"title": "Morbidly Obese CHAIR/STANDING Workout / Mobility Issues", "url": "https://www.youtube.com/watch?v=JSKTtnVcDdU"}
+        ]
 
-    # Query workout plans matching preference & bmi_category
-    workout_plan = WorkoutPlan.query.filter_by(name=preference, bmi_category=bmi_cat).first()
-    if not workout_plan:
-        # fallback plan if no exact match
-        workout_plan = WorkoutPlan.query.filter_by(name=preference).first()
+    return render_template("workouts.html", bmi=bmi, preference=preference, videos=video_recommendations)
 
-    videos = workout_plan.videos if workout_plan else []
-
-    return render_template("workouts.html", bmi=bmi, preference=preference, videos=videos)
-
-@app.route('/diet')
+@app.route('/diet', endpoint='diet')
 def diet():
     user_id = session.get('user_id')
     if not user_id:
@@ -567,19 +607,38 @@ def diet():
     if not user or not user.bmi or not user.diet_preference:
         return redirect(url_for('bmicalculation'))
 
+    # ✅ Normalize user input once
     preference = user.diet_preference.strip().lower()
 
-    # Fetch diet plan from DB by name
-    diet_plan = DietPlan.query.filter_by(name=preference).first()
-    if not diet_plan:
-        # fallback plan if no matching found
-        diet_plan = DietPlan.query.filter_by(name="default").first()
-
-    # Organize meals by meal_type
-    meals = {}
-    if diet_plan:
-        for meal in diet_plan.meals:
-            meals.setdefault(meal.meal_type, []).append(meal.item)
+    # ✅ Meal plan logic
+    if preference == "high protein":
+        meals = {
+            'Breakfast': ['Scrambled eggs', 'Greek yogurt'],
+            'Lunch': ['Grilled chicken breast', 'Quinoa salad'],
+            'Dinner': ['Steak with broccoli', 'Cottage cheese'],
+            'Snack': ['Protein bar', 'Boiled eggs']
+        }
+    elif preference == "low carb":
+        meals = {
+            'Breakfast': ['Avocado with eggs', 'Herbal tea'],
+            'Lunch': ['Zucchini noodles with pesto', 'Tofu stir-fry'],
+            'Dinner': ['Grilled fish', 'Spinach salad'],
+            'Snack': ['Nuts', 'Cucumber slices']
+        }
+    elif preference == "vegetarian":
+        meals = {
+            'Breakfast': ['Oatmeal with fruits', 'Smoothie'],
+            'Lunch': ['Chickpea curry', 'Brown rice'],
+            'Dinner': ['Paneer tikka', 'Vegetable soup'],
+            'Snack': ['Fruit salad', 'Roasted peanuts']
+        }
+    else:  # mixed or unknown
+        meals = {
+            'Breakfast': ['Boiled eggs', 'Toast with peanut butter'],
+            'Lunch': ['Chicken wrap', 'Fruit'],
+            'Dinner': ['Rice and lentils', 'Grilled veggies'],
+            'Snack': ['Yogurt', 'Banana']
+        }
 
     return render_template(
         'diet.html',

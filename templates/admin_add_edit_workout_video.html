@@ -2,19 +2,46 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Add Video to {{ workout_plan.name }}</title>
+  <title>{{ action }} Workout Video</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; }
+    h1 { text-align: center; margin-bottom: 20px; }
+    form { display: flex; flex-direction: column; gap: 15px; }
+    label { font-weight: 600; }
+    input[type="text"] {
+      padding: 8px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px;
+    }
+    button {
+      width: 150px; padding: 10px; background: #2980b9; border: none; color: white; font-weight: 600;
+      border-radius: 5px; cursor: pointer; align-self: center;
+    }
+    button:hover { background: #1f6391; }
+    a { text-align: center; display: block; margin-top: 20px; color: #2980b9; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
 </head>
 <body>
-  <h2>Add Video to Workout Plan: {{ workout_plan.name }}</h2>
+
+  <h1>
+    {{ action }} Workout Video
+    {% if plan %}
+      for Plan: {{ plan.name }}
+    {% endif %}
+  </h1>
+
   <form method="POST">
-    <label for="title">Video Title:</label>
-    <input type="text" id="title" name="title" required />
+    <label for="title">Title:</label>
+    <input type="text" id="title" name="title" required value="{{ video.title if video else '' }}">
 
     <label for="url">Video URL:</label>
-    <input type="url" id="url" name="url" required />
+    <input type="text" id="url" name="url" required value="{{ video.url if video else '' }}">
 
-    <button type="submit">Add Video</button>
-    <a href="{{ url_for('admin_edit_workout', workout_id=workout_plan.id) }}">Cancel</a>
+    <button type="submit">{{ action }} Video</button>
   </form>
+
+  {% if plan %}
+    <a href="{{ url_for('admin_workout_plan_videos', plan_id=plan.id) }}">Back to Videos List</a>
+  {% endif %}
+
 </body>
 </html>

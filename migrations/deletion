@@ -1,0 +1,25 @@
+from alembic import op
+import sqlalchemy as sa
+
+def upgrade():
+    op.drop_table('workout_videos')
+    op.drop_table('workout_plans')
+    op.create_table(
+        'workout_plans',
+        sa.Column('id', sa.Integer, primary_key=True),
+        sa.Column('name', sa.String(100), nullable=False),
+        sa.Column('bmi_category', sa.String(50), nullable=False),
+        sa.Column('preference', sa.String(50)),
+        # add other columns here if needed
+    )
+    op.create_table(
+        'workout_videos',
+        sa.Column('id', sa.Integer, primary_key=True),
+        sa.Column('plan_id', sa.Integer, sa.ForeignKey('workout_plans.id'), nullable=False),
+        sa.Column('title', sa.String(200), nullable=False),
+        sa.Column('url', sa.String(500), nullable=False),
+    )
+
+def downgrade():
+    op.drop_table('workout_videos')
+    op.drop_table('workout_plans')

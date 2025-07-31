@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>{{ action }} Workout Plan</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; }
+    h1 { text-align: center; margin-bottom: 20px; }
+    form { display: flex; flex-direction: column; gap: 15px; }
+    label { font-weight: 600; }
+    input[type="text"], select {
+      padding: 8px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px;
+    }
+    button {
+      width: 150px; padding: 10px; background: #2980b9; border: none; color: white; font-weight: 600;
+      border-radius: 5px; cursor: pointer; align-self: center;
+    }
+    button:hover { background: #1f6391; }
+    a { text-align: center; display: block; margin-top: 20px; color: #2980b9; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <h1>{{ action }} Workout Plan</h1>
+
+  <form method="POST">
+    <label for="name">Plan Name:</label>
+    <input type="text" id="name" name="name" required value="{{ plan.name if plan else '' }}">
+
+    <label for="bmi_category">BMI Category:</label>
+    <select id="bmi_category" name="bmi_category" required>
+      <option value="">-- Select BMI Category --</option>
+      <option value="Underweight" {% if plan and plan.bmi_category == 'Underweight' %}selected{% endif %}>Underweight (BMI &lt; 18.5)</option>
+      <option value="Normal" {% if plan and plan.bmi_category == 'Normal' %}selected{% endif %}>Normal (18.5 ≤ BMI &lt; 25)</option>
+      <option value="Overweight" {% if plan and plan.bmi_category == 'Overweight' %}selected{% endif %}>Overweight (BMI ≥ 25)</option>
+    </select>
+
+    <label for="preference">Preference (optional):</label>
+    <select id="preference" name="preference">
+      <option value="" {% if plan and not plan.preference %}selected{% endif %}>-- None --</option>
+      <option value="cardio" {% if plan and plan.preference == 'cardio' %}selected{% endif %}>Cardio</option>
+      <option value="strength" {% if plan and plan.preference == 'strength' %}selected{% endif %}>Strength</option>
+      <option value="yoga" {% if plan and plan.preference == 'yoga' %}selected{% endif %}>Yoga</option>
+    </select>
+
+    <button type="submit">{{ action }} Plan</button>
+  </form>
+
+  <a href="{{ url_for('admin_workout_plans') }}">&larr; Back to Workout Plans</a>
+
+</body>
+</html>
