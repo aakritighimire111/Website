@@ -13,6 +13,24 @@
       margin: 0;
       padding: 0;
       color: #333;
+      position: relative; /* Needed for absolute positioning of back button */
+    }
+    .back-button {
+      position: absolute;
+      top: 10px;
+      right: 20px;
+      text-decoration: none;
+      background-color: #007bff;
+      color: white;
+      padding: 8px 14px;
+      border-radius: 5px;
+      font-size: 14px;
+      font-weight: bold;
+      z-index: 1000;
+    }
+
+    .back-button:hover {
+      background-color: #0056b3;
     }
     .container {
       max-width: 600px;
@@ -62,6 +80,9 @@
   </style>
 </head>
 <body>
+
+  <!-- Back button top right -->
+  <a href="{{ url_for('next_page') }}" class="back-button">Back</a>
 
   <div class="container">
     <h1>Calorie Tracker</h1>

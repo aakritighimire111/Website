@@ -13,6 +13,28 @@
       font-family: 'Arial', sans-serif;
       margin: 0;
       padding: 0;
+      position: relative;
+    }
+
+    /* Back Button Styling */
+    .back-button {
+      position: absolute;
+      top: 10px;
+      right: 20px;
+      text-decoration: none;
+      background-color: #007bff;
+      color: white;
+      padding: 8px 14px;
+      border-radius: 5px;
+      font-size: 14px;
+      font-weight: bold;
+      z-index: 1000;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      transition: background-color 0.3s ease;
+    }
+
+    .back-button:hover {
+      background-color: #0056b3;
     }
 
     .container {
@@ -22,6 +44,8 @@
       background-color: white;
       box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
       border-radius: 10px;
+      position: relative;
+      z-index: 1;
     }
 
     h1 {
@@ -106,10 +130,62 @@
       0% { opacity: 0; }
       100% { opacity: 1; }
     }
+
+    form {
+      max-width: 600px;
+      margin: 40px auto 0;
+    }
+
+    form h2 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #333;
+    }
+
+    form div {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: bold;
+      color: #555;
+    }
+
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: 12px;
+      background-color: #ff4081;
+      border: none;
+      color: white;
+      font-size: 18px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button[type="submit"]:hover {
+      background-color: #e03673;
+    }
   </style>
 </head>
 
 <body>
+  <!-- Back Button -->
+  <a href="{{ url_for('next_page') }}" class="back-button">&larr; Back</a>
+
+
   <div class="container">
     <h1>Workout Recommendations</h1>
 
@@ -140,25 +216,25 @@
 
     <!-- Progress Tracking Form -->
     <form action="{{ url_for('update_progress') }}" method="POST">
-      <h2 style="text-align: center; margin-bottom: 30px;">Track Your Progress</h2>
+      <h2>Track Your Progress</h2>
 
-      <div style="margin-bottom: 20px;">
-        <label for="sets"><strong>Sets:</strong></label>
-        <input type="number" id="sets" name="sets" required>
+      <div>
+        <label for="sets">Sets:</label>
+        <input type="number" id="sets" name="sets" required />
       </div>
 
-      <div style="margin-bottom: 20px;">
-        <label for="reps"><strong>Reps (Repetitions):</strong></label>
-        <input type="number" id="reps" name="reps" required>
+      <div>
+        <label for="reps">Reps (Repetitions):</label>
+        <input type="number" id="reps" name="reps" required />
       </div>
 
-      <div style="margin-bottom: 20px;">
-        <label for="duration"><strong>Duration (minutes):</strong></label>
-        <input type="number" id="duration" name="duration" required>
+      <div>
+        <label for="duration">Duration (minutes):</label>
+        <input type="number" id="duration" name="duration" required />
       </div>
 
-      <div style="margin-bottom: 30px;">
-        <label for="intensity"><strong>Intensity Level:</strong></label>
+      <div>
+        <label for="intensity">Intensity Level:</label>
         <select id="intensity" name="intensity" required>
           <option value="" disabled selected>Select Intensity</option>
           <option value="Low">Low</option>
@@ -168,9 +244,7 @@
         </select>
       </div>
 
-      <div style="text-align: center;">
-        <button type="submit">Submit</button>
-      </div>
+      <button type="submit">Submit</button>
     </form>
   </div>
 </body>

@@ -6,6 +6,25 @@
     <title>Your Vibrant Diet Plan</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
     <style>
+        /* Back button styles */
+        .back-button {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            background-color: #ff4081;
+            color: white;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-weight: bold;
+            text-decoration: none;
+            font-size: 1rem;
+            box-shadow: 0 4px 10px rgba(255, 64, 129, 0.4);
+            transition: background-color 0.3s ease;
+            z-index: 1000;
+        }
+        .back-button:hover {
+            background-color: #e73370;
+        }
         body {
             font-family: 'Arial', sans-serif;
             margin: 0;
@@ -189,6 +208,7 @@
     </style>
 </head>
 <body>
+     <a href="{{ url_for('next_page') }}" class="back-button">&larr; Back</a>
     <div class="container">
         <!-- Flash Message Box -->
         <div class="message-box">
