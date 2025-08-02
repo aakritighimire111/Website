@@ -842,7 +842,8 @@ def forgot_password():
         user = User.query.filter_by(email=email).first()
         if user:
             token = serializer.dumps(user.email, salt='password-reset-salt')
-            reset_url = f"http://192.168.0.106:5000/reset_password/{token}"
+            reset_url = url_for('reset_password', token=token, _external=True)
+
             html = f"""
             <p>Hello {user.name},</p>
             <p>To reset your password, click the link below:</p>
@@ -861,32 +862,41 @@ def forgot_password():
 def reset_password(token):
     try:
         email = serializer.loads(token, salt='password-reset-salt', max_age=3600)
-    except SignatureExpired:
-        flash("The password reset link has expired.", "danger")
+    except:
+        flash("The reset link is invalid or has expired.", "danger")
         return redirect(url_for('forgot_password'))
-    except BadSignature:
-        flash("Invalid password reset token.", "danger")
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        flash("User not found.", "danger")
         return redirect(url_for('forgot_password'))
 
     if request.method == 'POST':
+        # ✅ Step 1: Get passwords from form
         password = request.form.get('password')
         confirm_password = request.form.get('confirm_password')
-        if not password or not confirm_password:
-            flash("Please fill out both password fields.", "warning")
-        elif password != confirm_password:
-            flash("Passwords do not match.", "warning")
-        else:
-            user = User.query.filter_by(email=email).first()
-            if user:
-                user.password = generate_password_hash(password)
-                db.session.commit()
-                flash("Your password has been updated! You can now log in.", "success")
-                return redirect(url_for('signin'))
-            else:
-                flash("User not found.", "danger")
-                return redirect(url_for('forgot_password'))
+
+        # ✅ Step 2: Check if they match
+        if password != confirm_password:
+            flash("Passwords do not match.", "danger")
+            return redirect(request.url)  # reloads the same reset page
+
+        # ✅ Step 3: Save new password
+        user.password_hash = generate_password_hash(password)
+
+        try:
+            db.session.commit()
+            flash("Your password has been updated successfully!", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash("Something went wrong. Please try again.", "danger")
+            print("Error:", e)
+
+        return redirect(url_for('signin'))
 
     return render_template('reset_password.html')
+
+
 @app.route('/submit_weight', methods=['POST'])
 def submit_weight():
     user_id = session.get('user_id')
